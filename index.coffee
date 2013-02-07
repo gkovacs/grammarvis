@@ -36,17 +36,26 @@ do ($) ->
 
   $.fn.showAsSibling = () ->
     this.css('background-color', 'pink')
-    $('#H' + this.attr('id')).show()
+    siblingToShow = $('#H' + this.attr('id'))
+    siblingToShow.show()
+    siblingToShow.css('bottom', -siblingToShow.height())
 
   $.fn.hoverId = () ->
-    this.tooltip({track: true, show:false, hide:false})
     text = this.attr('translation')
-    this.attr('title', this.attr('translation'))
-    this.attr('hovertext', this.attr('translation'))
+    if text.indexOf('/EntL') != -1
+      text = text[...text.indexOf('/EntL')]
     idNum = this.attr('id')
     this.attr('title', text)
     this.attr('hovertext', text)
-    this.append($('<div>').addClass('Hovertips').attr('id', 'H' + idNum).text(text).css('position', 'absolute').css('left', 0).css('bottom', 0).css('zIndex', 100).css('color', 'white').css('background-color', 'black').css('font-size', 18).hide())
+    textAsHtml = $('<div>')
+    for x in text.split('\n')
+      textAsHtml.append($('<span>').text(x)).append('<br>')
+    this.tooltip({track: true, show:false, hide:false, content: textAsHtml.html()})
+    shortTranslation = text
+    if shortTranslation.indexOf('\n') != -1
+      shortTranslation = shortTranslation[...shortTranslation.indexOf('\n')]
+    shortTranslationDiv = $('<div>').addClass('Hovertips').attr('id', 'H' + idNum).text(shortTranslation).css('position', 'absolute').css('left', 0).css('bottom', 0).css('zIndex', 100).css('color', 'white').css('background-color', 'black').css('font-size', 18).hide()
+    this.append(shortTranslationDiv)
     #this.addClass(text.split(' ').join('-'))
     this.mouseover(() =>
       console.log this.attr('hovertext')

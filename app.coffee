@@ -299,11 +299,26 @@ manualTranslations = {}
 for [foreign,english] in zip(foreignText, englishText)
   manualTranslations[foreign.trim()] = english.trim()
 
+fs = require 'fs'
+japanesedict = require './japanesedict_v2'
+jdict = new japanesedict.JapaneseDict(fs.readFileSync('edict2_full.txt', 'utf8'))
+
 everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
   #if manualTranslations[sentence]?
   #   callback manualTranslations[sentence]
   #   return
   translator.getTranslations(sentence, lang, 'en', (translation) ->
-    callback(translation[0].TranslatedText)
+    output = []
+    translatedText = translation[0].TranslatedText
+    if lang == 'ja' and jdict.getDefinition(sentence)?
+      output.push translatedText
+      output.push jdict.getRomaji(sentence)
+      output.push jdict.getDefinition(sentence)
+    else if lang == 'ja'
+      output.push translatedText
+      output.push jdict.getRomaji(sentence)
+    else
+      output.push translatedText
+    callback(output.join('\n'))
   )
 
