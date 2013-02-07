@@ -14,7 +14,7 @@ do ($) ->
   $.fn.borderStuff = (depth, color) ->
     #if not width?
     width = 3
-    maxdepth = 5
+    maxdepth = getMaxDepth() #getMaxDepth('R')
     ###
     depth = $(this).parents().attr('depth')
     console.log this.parent()
@@ -24,6 +24,7 @@ do ($) ->
       depth = 0
     ###
     #this.css('display', 'table-cell').css('vertical-align', 'middle')
+    #this.css('font-size', (15+depth*3) + 'pt')
     padding = 15
     margin = 0
     if color == 'white' # terminals
@@ -33,11 +34,6 @@ do ($) ->
      color = depthToColor(depth)
     return this.addClass('bordered').css('position', 'relative').css('padding', padding + 'px').css('font-size', '32px').attr('color', color).css('background-color', color).css('border-width', 1).css('border-style', 'solid').css('float', 'left').attr('depth', depth).css('border-color', 'black').css('border-radius', '10px').css('margin-top', margin).css('margin-bottom', margin)
 
-  $.fn.showSibling = () ->
-    this.show().parent().css('background-color', 'green')
-
-  #$.fn.getSiblings = () ->
-  
   $.fn.showAsSibling = () ->
     this.css('background-color', 'pink')
     $('#H' + this.attr('id')).show()
@@ -51,7 +47,7 @@ do ($) ->
     this.attr('title', text)
     this.attr('hovertext', text)
     this.append($('<div>').addClass('Hovertips').attr('id', 'H' + idNum).text(text).css('position', 'absolute').css('left', 0).css('bottom', 0).css('zIndex', 100).css('color', 'white').css('background-color', 'black').css('font-size', 18).hide())
-    this.addClass(text.split(' ').join('-'))
+    #this.addClass(text.split(' ').join('-'))
     this.mouseover(() =>
       console.log this.attr('hovertext')
       this.css('background-color', 'yellow')
@@ -78,68 +74,8 @@ do ($) ->
       this.css('background-color', this.attr('color'))
     )
     return this
-  
-  $.fn.hoverText = (text) ->
-    this.tooltip({track: true, show:false, hide:false})
-    this.attr('title', text)
-    this.attr('hovertext', text)
-    this.append($('<div>').addClass('Hovertips').addClass('H' + text.split(' ').join('-')).text(text).css('position', 'absolute').css('left', 0).css('bottom', -18).css('zIndex', 100).css('color', 'white').css('background-color', 'green').css('font-size', 18).hide())
-    this.addClass(text.split(' ').join('-'))
-    this.mouseover(() =>
-      console.log this.attr('hovertext')
 
-      #$('#transRegion').text(text)
-      #for x in $('.hovered')
-      #  $(x).css('background-color', $(x).attr('color'))
-      #$('.hovered').removeClass('hovered')
-      this.css('background-color', 'yellow')
-      ###
-      parent = this.parent()
-      #console.log parent
-      while parent.length > 0 and parent.attr? and parent.attr('color')?
-        parent.css('background-color', parent.attr('color'))
-        parent = parent.parent()
-      ###
-      for x in $('.bordered')
-        $(x).css('background-color', $(x).attr('color'))
-      this.addClass('hovered')
-
-      $('.Hovertips').hide()
-      if this.attr('hovertext') == 'my cat'
-        $('.Hate-5-mice-in-the-house').showSibling()
-        #$('.Hmy-cat-ate-5-mice-in-the-house').show()
-      if this.attr('hovertext') == 'ate 5 mice in the house'
-        $('.Hmy-cat').showSibling()
-      if this.attr('hovertext') == 'in the house'
-        $('.Hmy-cat').showSibling()
-        $('.Hate-5-mice').showSibling()
-      if this.attr('hovertext') == 'ate 5 mice'
-        $('.Hin-the-house').showSibling()
-        $('.Hmy-cat').showSibling()
-      if this.attr('hovertext') == '5 mice'
-        $('.Hin-the-house').showSibling()
-        $('.Hmy-cat').showSibling()
-        $('.Hate').showSibling()
-      if this.attr('hovertext') == '5 small animals'
-        $('.Hin-the-house').showSibling()
-        $('.Hmy-cat').showSibling()
-        $('.Hate').showSibling()
-        $('.Hmouse').showSibling()
-      this.css('background-color', 'yellow')
-      #console.log text
-      #this.tooltip({track: true})
-      #this.html($('<span>').addClass('translation').text(text))
-      #this.find('.translation').show()
-      return false
-    )
-    this.mouseleave(() =>
-      #for x in $('.hovered')
-      #  $(x).css('background-color', $(x).attr('color'))
-      #$('.hovered').removeClass('hovered')
-      this.css('background-color', this.attr('color'))
-    )
-    return this
-
+'''
 ref_hierarchy = [['私', 'の', '猫'], 'が', [['家', 'で'], [ [['五', '匹'], 'の', '鼠'], 'を', '食べた']]]
 translations = {
 '私の猫が家で五匹の鼠を食べた': 'my cat ate 5 mice in the house',
@@ -161,6 +97,25 @@ translations = {
 'を': 'object marker',
 '食べた': 'ate',
 }
+'''
+
+'''
+getMaxDepth = root.getMaxDepth = (id) ->
+  maxval = 0
+  for child in getChildrenOfId(id)
+    maxval = Math.max(maxval, getMaxDepth(child)+1)
+  return maxval
+'''
+
+getMaxDepth = root.getMaxDepth = (subtree) ->
+  if not subtree?
+    subtree = root.ref_hierarchy
+  if typeof subtree != typeof []
+    return 0
+  maxval = 0
+  for child in subtree
+    maxval = Math.max(maxval, getMaxDepth(child)+1)
+  return maxval
 
 getChildrenOfId = root.getChildrenOfId = (id) ->
   return ($(x).attr('id') for x in $('#' + id).children('.textRegion'))
@@ -176,100 +131,88 @@ hierarchyToTerminals = (hierarchy, lang) ->
     return hierarchy
 
 hierarchyWithIdToTerminals = (hierarchy, lang) ->
-  id = hierarchy[0]
-  contents = hierarchy[1..]
+  if typeof hierarchy == typeof ''
+    return hierarchy
+  id = hierarchy.id
+  contents = hierarchy[..]
   if contents.length == 1
-    return contents[0]
+    return hierarchyWithIdToTerminals(contents[0])
   else
+  if true
     children = (hierarchyWithIdToTerminals(x, lang) for x in contents)
     if not lang? or lang == 'zh' or lang == 'ja'
       return children.join('')
     else
       return children.join(' ')
 
-makeDivs = (subHierarchy, depth=1) ->
+makeDivs = (subHierarchy, lang, depth=1) ->
   basediv = $('<div>')
-  id = subHierarchy[0]
-  contentHierarchy = subHierarchy[1..]
-  currentText = hierarchyToTerminals(contentHierarchy)
-  console.log currentText
-  console.log translations[currentText]
+  id = subHierarchy.id
+  contentHierarchy = subHierarchy[..]
   basediv.addClass('hovertext').attr('id', id)
   basediv.addClass('hovertext').addClass('textRegion')
-  foreignText = hierarchyWithIdToTerminals(subHierarchy)
+  foreignText = hierarchyWithIdToTerminals(subHierarchy, lang)
   console.log 'foreign text: ' + foreignText
   basediv.attr('foreignText', foreignText)
-  translation = translations[foreignText]
+  translation = root.translations[foreignText]
   basediv.attr('translation', translation)
   basediv.hoverId()
   #basediv.hoverText(translations[currentText])
   if contentHierarchy.length > 1
     basediv.borderStuff(depth)
     for child in contentHierarchy
-      basediv.append makeDivs(child, depth+1)
+      basediv.append makeDivs(child, lang, depth+1)
   else if contentHierarchy.length == 1
-    basediv.borderStuff(depth, 'white').text(contentHierarchy[0]).hoverId()
+    if typeof contentHierarchy[0] == typeof ''
+      basediv.borderStuff(depth, 'white')
+        #.css('font-size', 10+depth*10)
+        .text(contentHierarchy[0]).hoverId()
+    else
+      basediv.borderStuff(depth, 'white')
+        #.css('font-size', 20+depth*10)
+        .text(contentHierarchy[0]).hoverId()
 
 addIdsToHierarchy = (hierarchy, myId='R') ->
   if typeof hierarchy == typeof []
-    output = [myId]
+    output = []
     for x,i in hierarchy
+      console.log x
       output.push addIdsToHierarchy(x, myId + '_' + i)
+    output.id = myId
     return output
   else
-    return [myId, hierarchy]
+    output = [hierarchy]
+    output.id = myId
+    return output
 
-$(document).ready(() ->
+getUrlParameters = () ->
+  map = {}
+  parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, (m,key,value) ->
+    map[key] = decodeURI(value)
+  )
+  return map
+
+now.ready(() ->
   #$(document).tooltip({track: true, show:false, hide:false})
-  ref_hierarchy_with_ids = root.ref_hierarchy_with_ids = addIdsToHierarchy(ref_hierarchy)
-  $('body').css('display', 'table').append(
-    makeDivs(ref_hierarchy_with_ids)
-  )
-  return
-  $('body').css('position', 'relative').append(
-    $('<div>').borderStuff(1).hoverText('my cat ate 5 mice in the house').append(
-      $('<div>').borderStuff(2).hoverText('my cat').append(
-        $('<div>').borderStuff(0).hoverText('me').text('私')
-      ).append(
-        $('<div>').borderStuff(0).hoverText('of').text('の')
-      ).append(
-        $('<div>').borderStuff(0).hoverText('cat').text('猫')
-      )
-    ).append(
-      $('<div>').borderStuff(0).hoverText('subject marker').text('が')
-    ).append(
-        $('<div>').borderStuff(2).hoverText('ate 5 mice in the house').append(
-          $('<div>').borderStuff(3).hoverText('in the house').append(
-            $('<div>').borderStuff(0).hoverText('house').text('家')
-          ).append(
-            $('<div>').borderStuff(0).hoverText('at').text('で')
-          )
-        ).append(
-          $('<div>').borderStuff(3).hoverText('ate 5 mice').append(
-            $('<div>').borderStuff(4).hoverText('5 mice').append(
-              $('<div>').borderStuff(5).hoverText('5 small animals').append(
-                $('<div>').borderStuff(0).hoverText('5').text('五')#.append($('<div>').text('the number five is very important').css('font-size', '12px'))
-              ).append(
-                $('<div>').borderStuff(0).hoverText('counter for small animals').text('匹')
-              )
-            ).append(
-              $('<div>').borderStuff(0).hoverText('of').text('の')
-            ).append(
-              $('<div>').borderStuff(0).hoverText('mouse').text('鼠')
-            )
-          ).append(
-            $('<div>').borderStuff(0).hoverText('object marker').text('を')
-          ).append(
-            $('<div>').borderStuff(0).hoverText('ate').text('食べた')
-          )
-        )
+  root.phraseText = getUrlParameters()['sentence'].split('(').join(' [ ').split(')').join(' ] ').split('  ').join(' ') ? 'the cat jumped over the dog'
+  console.log root.phraseText
+  lang = getUrlParameters()['lang'] ? 'en'
+  now.getParseHierarchyAndTranslations(root.phraseText, lang, (ref_hierarchy, translations) ->
+  #ref_hierarchy = ['会議', ['中に', ['遊ぶ', ['のは', ['やめなさい']]]]]
+  #ref_hierarchy = [['私の', ['猫が']], '家で', '鼠を', ['食べた']]
+  #ref_hierarchy = [[['私 の'], '猫 が', '鼠 を'], '食べた']
+  #ref_hierarchy = [['私 の', '猫 が'], '家 で', ['鼠 を', '食べた']]
+  #ref_hierarchy = [['会議 中 に  '], [['遊ぶ の は  '], ['やめ なさい ']]]
+  #ref_hierarchy = [[['私', 'の'], ['猫', 'が']], ['家', 'で'], [['青い'], ['鼠', 'を']], ['食べた']]
+  #now.getTranslationsForParseHierarchy(ref_hierarchy, lang, (translations) ->
+    console.log ref_hierarchy
+    console.log translations
+    root.ref_hierarchy = ref_hierarchy
+    root.translations = translations
+    ref_hierarchy_with_ids = root.ref_hierarchy_with_ids = addIdsToHierarchy(ref_hierarchy)
+    console.log ref_hierarchy_with_ids
+    $('body').css('display', 'table').append(
+      makeDivs(ref_hierarchy_with_ids, lang)
     )
-  ).append(
-    $('<div>').attr('id', 'transRegion')
   )
-  $('.ate').hoverText('ate')
-  $('.mouse').hoverText('mouse')
-  $('.me').hoverText('me')
-  $('.of').hoverText('of')
-  $('.cat').hoverText('cat')
 )
