@@ -2,6 +2,8 @@ $ = require 'jQuery'
 restler = require 'restler'
 http_get = require 'http-get'
 
+exec = require('child_process').exec
+
 #translator = require './translator'
 translator = require './googletranslate'
 
@@ -25,6 +27,10 @@ app.configure( ->
   app.set('view options', { layout: false })
   app.locals({ layout: false })
   app.use(express.static(__dirname + '/'))
+)
+
+app.get('/pull', (req, res) ->
+  exec('git pull origin master', console.log)
 )
 
 everyone.now.getParse = getParse = (sentence, lang, callback) ->
@@ -141,8 +147,6 @@ everyone.now.getTranslationsForParseHierarchy = getTranslationsForParseHierarchy
 
 escapeshell = (shellcmd) ->
   return '"'+shellcmd.replace(/(["\s'$`\\])/g,'\\$1')+'"'
-
-exec = require('child_process').exec
 
 everyone.now.getParseHierarchyAndTranslations = (sentence, lang, callback) ->
   console.log "getting constituents and translations"
