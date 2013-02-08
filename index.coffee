@@ -35,10 +35,30 @@ do ($) ->
     return this.addClass('bordered').css('position', 'relative').css('padding', padding + 'px').css('font-size', '32px').attr('color', color).css('background-color', color).css('border-width', 1).css('border-style', 'solid').css('float', 'left').attr('depth', depth).css('border-color', 'black').css('border-radius', '10px').css('margin-top', margin).css('margin-bottom', margin)
 
   $.fn.showAsSibling = () ->
+    this.css('background-color', 'lightblue')
+    siblingToShow = $('#H' + this.attr('id'))
+    siblingToShow.show()
+    this.addClass('hovered')
+    ownHalfWidth = this.width()/2
+    siblingHalfWidth = siblingToShow.width()/2
+    siblingToShow.css('left', Math.max(0, ownHalfWidth - siblingHalfWidth))
+    siblingToShow.css('bottom', -siblingToShow.height())
+    siblingToShow.mouseover(() => 
+      return false
+    )
+
+  $.fn.showAsChild = () ->
     this.css('background-color', 'pink')
     siblingToShow = $('#H' + this.attr('id'))
     siblingToShow.show()
+    this.addClass('hovered')
+    ownHalfWidth = this.width()/2
+    siblingHalfWidth = siblingToShow.width()/2
+    siblingToShow.css('left', Math.max(0, ownHalfWidth - siblingHalfWidth))
     siblingToShow.css('bottom', -siblingToShow.height())
+    siblingToShow.mouseover(() => 
+      return false
+    )
 
   $.fn.hoverId = () ->
     text = this.attr('translation')
@@ -54,7 +74,8 @@ do ($) ->
     shortTranslation = text
     if shortTranslation.indexOf('\n') != -1
       shortTranslation = shortTranslation[...shortTranslation.indexOf('\n')]
-    shortTranslationDiv = $('<div>').addClass('Hovertips').attr('id', 'H' + idNum).text(shortTranslation).css('position', 'absolute').css('left', 0).css('bottom', 0).css('zIndex', 100).css('color', 'white').css('background-color', 'black').css('font-size', 18).hide()
+    shortTranslationDiv = $('<div>').addClass('Hovertips').attr('id', 'H' + idNum).text(shortTranslation).css('position', 'absolute').css('bottom', 0).css('zIndex', 100).css('color', 'white').css('background-color', 'black').css('border-bottom-left-radius', 5).css('border-bottom-right-radius', 5).css('font-size', 18).hide()
+    shortTranslationDiv.css('text-align', 'center').css('word-wrap', 'break-word')
     this.append(shortTranslationDiv)
     #this.addClass(text.split(' ').join('-'))
     this.mouseover(() =>
@@ -72,13 +93,15 @@ do ($) ->
           $('#' + sibling).showAsSibling()
         currentId = parent
         console.log currentId
+      for immediateChild in getChildrenOfId(idNum)
+        $('#' + immediateChild).showAsChild()
       this.css('background-color', 'yellow')
       return false
     )
     this.mouseleave(() =>
-      #for x in $('.hovered')
-      #  $(x).css('background-color', $(x).attr('color'))
-      #$('.hovered').removeClass('hovered')
+      for x in $('.hovered')
+        $(x).css('background-color', $(x).attr('color'))
+      $('.hovered').removeClass('hovered')
       $('.Hovertips').hide()
       this.css('background-color', this.attr('color'))
     )

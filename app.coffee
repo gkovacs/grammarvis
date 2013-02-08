@@ -2,7 +2,8 @@ $ = require 'jQuery'
 restler = require 'restler'
 http_get = require 'http-get'
 
-translator = require './translator'
+#translator = require './translator'
+translator = require './googletranslate'
 
 express = require 'express'
 app = express()
@@ -302,6 +303,8 @@ for [foreign,english] in zip(foreignText, englishText)
 fs = require 'fs'
 japanesedict = require './japanesedict_v2'
 jdict = new japanesedict.JapaneseDict(fs.readFileSync('edict2_full.txt', 'utf8'))
+chinesedict = require './chinesedict'
+cdict = new chinesedict.ChineseDict(fs.readFileSync('cedict_full.txt', 'utf8'))
 
 everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
   #if manualTranslations[sentence]?
@@ -309,14 +312,30 @@ everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
   #   return
   translator.getTranslations(sentence, lang, 'en', (translation) ->
     output = []
+    console.log translation
     translatedText = translation[0].TranslatedText
-    if lang == 'ja' and jdict.getDefinition(sentence)?
-      output.push translatedText
-      output.push jdict.getRomaji(sentence)
-      output.push jdict.getDefinition(sentence)
-    else if lang == 'ja'
-      output.push translatedText
-      output.push jdict.getRomaji(sentence)
+    if not translatedText? or translatedText.length < 1
+      translatedText = translation[0].translatedText
+    if lang == 'ja'
+      englishDef = jdict.getDefinition(sentence)
+      romaji = jdict.getRomaji(sentence)
+      if englishDef? and englishDef.length > 0
+        output.push translatedText
+        output.push romaji
+        output.push englishDef
+      else
+        output.push translatedText
+        output.push romaji
+    else if lang == 'zh'
+      englishDef = cdict.getEnglishListForWord(sentence).join('; ')
+      pinyin = cdict.getPinyin(sentence)
+      if englishDef? and englishDef.length > 0
+        output.push translatedText
+        output.push pinyin
+        output.push englishDef
+      else
+        output.push translatedText
+        output.push pinyin
     else
       output.push translatedText
     callback(output.join('\n'))
