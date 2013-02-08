@@ -10,7 +10,10 @@ main = ->
   #print jdict.wordLookup['私']
   print jdict.getRomaji('私')
   print jdict.getDefinition('私')
-  print jdict.getRomaji('問題が山積みなのじゃ')
+  #print jdict.getRomaji('問題が山積みなのじゃ')
+  #print jdict.getRomaji('ルティ')
+  print jdict.getRomaji('ウルティア')
+  print jdict.getRomaji('ティ')
   #print jdict.getRomaji('中華人民共和国')
   #print japanesedict.toRomaji('がっこう')
   #print japanesedict.kanaMatchesRomajiScore('watashi', 'わたし')

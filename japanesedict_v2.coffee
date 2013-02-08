@@ -269,6 +269,11 @@ kata = {
   'ツィ': ['tsi'],
   'ツェ': ['tse'],
   'ツォ': ['tso'],
+  'ィ': ['i'],
+  'ェ': ['e'],
+  'ァ': ['a'],
+  'ォ': ['o'],
+  'ゥ': ['u'],
 }
 
 do ->
@@ -316,9 +321,15 @@ toRomaji = root.toRomaji = (kana) ->
       matched = true
     if matched
       continue
+    output.push kana[kana_idx...kana_idx+1]
     kana_idx += 1
   return output.join('')
 
+isKatakana = (word) ->
+  for c in word
+    if not kata[c]?
+      return false
+  return true
 
 kanaMatchesRomajiScore = (romaji, kana) ->
   romaji = romaji.toLowerCase()
@@ -434,7 +445,7 @@ class JapaneseDict
     output = []
     wordList = @getWordList(word)
     if wordList.length <= 1
-      return word
+      return toRomaji(word)
     for childWord in wordList
       output.push @getRomaji(childWord)
     return output.join(' ')
@@ -446,6 +457,8 @@ class JapaneseDict
   getWordList: (sentence) ->
     myself = this
     longestStartWord = (remaining) ->
+      if isKatakana(remaining)
+        return remaining
       if myself.getDefinition(remaining)?
         return remaining
       if hira[remaining]?
