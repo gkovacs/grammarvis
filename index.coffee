@@ -34,28 +34,23 @@ do ($) ->
      color = depthToColor(depth)
     return this.addClass('bordered').css('position', 'relative').css('padding', padding + 'px').css('font-size', '32px').attr('color', color).css('background-color', color).css('border-width', 1).css('border-style', 'solid').css('float', 'left').attr('depth', depth).css('border-color', 'black').css('border-radius', '10px').css('margin-top', margin).css('margin-bottom', margin)
 
-  $.fn.showAsSibling = () ->
-    this.css('background-color', 'lightblue')
+  $.fn.showAsSibling = (color) ->
+    if not color?
+      color = 'lightblue'
+    this.css('background-color', color)
     siblingToShow = $('#H' + this.attr('id'))
     siblingToShow.show()
     this.addClass('hovered')
-    ownHalfWidth = this.width()/2
-    siblingHalfWidth = siblingToShow.width()/2
-    siblingToShow.css('left', Math.max(0, ownHalfWidth - siblingHalfWidth))
-    siblingToShow.css('bottom', -siblingToShow.height())
-    siblingToShow.mouseover(() => 
-      return false
-    )
-
-  $.fn.showAsChild = () ->
-    this.css('background-color', 'pink')
-    siblingToShow = $('#H' + this.attr('id'))
-    siblingToShow.show()
-    this.addClass('hovered')
-    ownHalfWidth = this.width()/2
-    siblingHalfWidth = siblingToShow.width()/2
-    siblingToShow.css('left', Math.max(0, ownHalfWidth - siblingHalfWidth))
-    siblingToShow.css('bottom', -siblingToShow.height())
+    setWidth = () =>
+      ownHalfWidth = this.width()/2
+      siblingHalfWidth = siblingToShow.width()/2
+      left = Math.max(0, ownHalfWidth - siblingHalfWidth)
+      top = -siblingToShow.height()
+      #siblingToShow.offset({'left': left, 'top': top})
+      siblingToShow.css('left', left)
+      siblingToShow.css('top', top)
+    setWidth()
+    #setTimeout(setWidth, 5000)
     siblingToShow.mouseover(() => 
       return false
     )
@@ -74,7 +69,7 @@ do ($) ->
     shortTranslation = text
     if shortTranslation.indexOf('\n') != -1
       shortTranslation = shortTranslation[...shortTranslation.indexOf('\n')]
-    shortTranslationDiv = $('<div>').addClass('Hovertips').attr('id', 'H' + idNum).text(shortTranslation).css('position', 'absolute').css('bottom', 0).css('zIndex', 100).css('color', 'white').css('background-color', 'black').css('border-bottom-left-radius', 5).css('border-bottom-right-radius', 5).css('font-size', 18).hide()
+    shortTranslationDiv = $('<div>').addClass('Hovertips').attr('id', 'H' + idNum).text(shortTranslation).css('position', 'absolute').css('top', 0).css('zIndex', 100).css('color', 'white').css('background-color', 'black').css('border-top-left-radius', 5).css('border-top-right-radius', 5).css('font-size', 18).hide()
     shortTranslationDiv.css('text-align', 'center').css('word-wrap', 'break-word')
     this.append(shortTranslationDiv)
     #this.addClass(text.split(' ').join('-'))
@@ -90,11 +85,15 @@ do ($) ->
         parent = currentId.split('_')[...-1].join('_')
         siblings = (x for x in getChildrenOfId(parent) when x != currentId)
         for sibling in siblings
-          $('#' + sibling).showAsSibling()
+          $('#' + sibling).showAsSibling('lightblue')
         currentId = parent
         console.log currentId
-      for immediateChild in getChildrenOfId(idNum)
-        $('#' + immediateChild).showAsChild()
+      if getChildrenOfId(idNum).length == 0
+        this.showAsSibling('yellow')
+      else
+        console.log idNum
+        for immediateChild in getChildrenOfId(idNum)
+          $('#' + immediateChild).showAsSibling('pink')
       this.css('background-color', 'yellow')
       return false
     )
