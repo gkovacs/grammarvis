@@ -33,6 +33,10 @@ app.get('/pull', (req, res) ->
   exec('git pull origin master', console.log)
 )
 
+app.post('/pull', (req, res) ->
+  exec('git pull origin master', console.log)
+)
+
 everyone.now.getParse = getParse = (sentence, lang, callback) ->
   http_get.get('http://localhost:3555/parse?lang=' + lang + '&sentence=' + sentence, (error, result) ->
     callback(result.buffer)
