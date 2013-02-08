@@ -31,10 +31,12 @@ app.configure( ->
 
 app.get('/pull', (req, res) ->
   exec('git pull origin master', console.log)
+  res.send 'done'
 )
 
 app.post('/pull', (req, res) ->
   exec('git pull origin master', console.log)
+  res.send 'done'
 )
 
 everyone.now.getParse = getParse = (sentence, lang, callback) ->
