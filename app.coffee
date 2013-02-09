@@ -1,6 +1,5 @@
 $ = require 'jQuery'
-restler = require 'restler'
-http_get = require 'http-get'
+request = require 'request'
 
 exec = require('child_process').exec
 
@@ -9,10 +8,13 @@ translator = require './googletranslate'
 
 express = require 'express'
 app = express()
+
 http = require 'http'
 https = require 'https'
 
 fs = require 'fs'
+
+nowjsText = fs.readFileSync('nowjstext.js', 'utf-8')
 
 cmdArgs = (x for x in process.argv when x.indexOf('node') == -1 and x.indexOf('iced') == -1 and x.indexOf('coffee') == -1 and x.indexOf('supervisor') == -1)
 
@@ -21,11 +23,28 @@ if cmdArgs.length > 0 and cmdArgs[0] == 'https'
     'key': fs.readFileSync('ssl-cert-snakeoil.key'),
     'cert': fs.readFileSync('ssl-cert-snakeoil.pem'),
   }
+  app.get('/nowjs/now2.js', (req, res) ->
+    request.get('https://' + req.headers.host + '/nowjs/now.js', (err, result, body) ->
+      res.end body.split('nowInitialize("//').join('nowInitialize("https://')
+    )
+  )
   httpserver = https.createServer(https_options, app)
   httpserver.listen(1358)
 else
+  app.get('/nowjs/now2.js', (req, res) ->
+    request.get('http://' + req.headers.host + '/nowjs/now.js', (err, result, body) ->
+      res.end body.split('nowInitialize("//').join('nowInitialize("http://')
+    )
+  )
   httpserver = http.createServer(app)
   httpserver.listen(1357)
+
+app.get('/nowjs/now2.js', (req, res) ->
+  request.get("#{req.method}://#{req.hostname}:#{req.port}/nowjs/now.js", (err, result, body) ->
+    res.end body.split('nowInitialize("//').join('nowInitialize("' + req.method + '://')
+  )
+)
+
 nowjs = require 'now'
 everyone = nowjs.initialize(httpserver)
 
@@ -54,8 +73,8 @@ app.post('/pull', (req, res) ->
 )
 
 everyone.now.getParse = getParse = (sentence, lang, callback) ->
-  http_get.get('http://localhost:3555/parse?lang=' + lang + '&sentence=' + sentence, (error, result) ->
-    callback(result.buffer)
+  request.get('http://localhost:3555/parse?lang=' + lang + '&sentence=' + sentence, (error, result, data) ->
+    callback(data)
   )
 
 terminals = (s, lang) ->
@@ -328,6 +347,8 @@ japanesedict = require './japanesedict_v2'
 jdict = new japanesedict.JapaneseDict(fs.readFileSync('edict2_full.txt', 'utf8'))
 chinesedict = require './chinesedict'
 cdict = new chinesedict.ChineseDict(fs.readFileSync('cedict_full.txt', 'utf8'))
+
+#everyone.now.core.options.socketio.resource = 'https://localhost:1358/socket.io'
 
 everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
   #if manualTranslations[sentence]?
