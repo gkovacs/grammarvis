@@ -23,11 +23,11 @@ if cmdArgs.length > 0 and cmdArgs[0] == 'https'
   }
   app.get('/nowjs/now2.js', (req, res) ->
     myhost = req.headers.host
-    console.log 'http://' + myhost + '/nowjs/now.js'
+    console.log 'https://' + myhost + '/nowjs/now.js'
     if not myhost?
       myhost = 'geza.csail.mit.edu:1358'
-    request.get('https://' + myhost + '/nowjs/now.js', (err, result, body) ->
-      res.end body.split('nowInitialize("//').join('nowInitialize("https://')
+    request.get('https://localhost:1358/nowjs/now.js', (err, result, body) ->
+      res.end body.split('nowInitialize("//localhost:1358').join('nowInitialize("https://' + myhost)
     )
   )
   httpserver = https.createServer(https_options, app)
@@ -38,8 +38,8 @@ else
     console.log 'http://' + myhost + '/nowjs/now.js'
     if not myhost?
       myhost = 'geza.csail.mit.edu:1357'
-    request.get('http://' + myhost + '/nowjs/now.js', (err, result, body) ->
-      res.end body.split('nowInitialize("//').join('nowInitialize("http://')
+    request.get('http://localhost:1357/nowjs/now.js', (err, result, body) ->
+      res.end body.split('nowInitialize("//localhost:1357').join('nowInitialize("http://' + myhost)
     )
   )
   httpserver = http.createServer(app)
