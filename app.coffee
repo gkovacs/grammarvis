@@ -10,8 +10,22 @@ translator = require './googletranslate'
 express = require 'express'
 app = express()
 http = require 'http'
-httpserver = http.createServer(app)
-httpserver.listen(1357)
+https = require 'https'
+
+fs = require 'fs'
+
+cmdArgs = (x for x in process.argv when x.indexOf('node') == -1 and x.indexOf('iced') == -1 and x.indexOf('coffee') == -1 and x.indexOf('supervisor') == -1)
+
+if cmdArgs.length > 0 and cmdArgs[0] == 'https'
+  https_options = {
+    'key': fs.readFileSync('ssl-cert-snakeoil.key'),
+    'cert': fs.readFileSync('ssl-cert-snakeoil.pem'),
+  }
+  httpserver = https.createServer(https_options, app)
+  httpserver.listen(1358)
+else
+  httpserver = http.createServer(app)
+  httpserver.listen(1357)
 nowjs = require 'now'
 everyone = nowjs.initialize(httpserver)
 
@@ -310,7 +324,6 @@ manualTranslations = {}
 for [foreign,english] in zip(foreignText, englishText)
   manualTranslations[foreign.trim()] = english.trim()
 
-fs = require 'fs'
 japanesedict = require './japanesedict_v2'
 jdict = new japanesedict.JapaneseDict(fs.readFileSync('edict2_full.txt', 'utf8'))
 chinesedict = require './chinesedict'
