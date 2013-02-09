@@ -22,7 +22,11 @@ if cmdArgs.length > 0 and cmdArgs[0] == 'https'
     'cert': fs.readFileSync('ssl-cert-snakeoil.pem'),
   }
   app.get('/nowjs/now2.js', (req, res) ->
-    request.get('https://' + req.headers.host + '/nowjs/now.js', (err, result, body) ->
+    myhost = req.headers.host
+    console.log 'http://' + myhost + '/nowjs/now.js'
+    if not myhost?
+      myhost = 'geza.csail.mit.edu:1358'
+    request.get('https://' + myhost + '/nowjs/now.js', (err, result, body) ->
       res.end body.split('nowInitialize("//').join('nowInitialize("https://')
     )
   )
@@ -30,7 +34,11 @@ if cmdArgs.length > 0 and cmdArgs[0] == 'https'
   httpserver.listen(1358)
 else
   app.get('/nowjs/now2.js', (req, res) ->
-    request.get('http://' + req.headers.host + '/nowjs/now.js', (err, result, body) ->
+    myhost = req.headers.host
+    console.log 'http://' + myhost + '/nowjs/now.js'
+    if not myhost?
+      myhost = 'geza.csail.mit.edu:1357'
+    request.get('http://' + myhost + '/nowjs/now.js', (err, result, body) ->
       res.end body.split('nowInitialize("//').join('nowInitialize("http://')
     )
   )
