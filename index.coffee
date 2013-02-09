@@ -213,7 +213,7 @@ makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
         #.css('font-size', 20+depth*10)
         .text(contentHierarchy[0]).hoverId()
 
-addIdsToHierarchy = (hierarchy, myId='R') ->
+addIdsToHierarchy = (hierarchy, myId='R0') ->
   if typeof hierarchy == typeof []
     output = []
     for x,i in hierarchy
@@ -233,27 +233,39 @@ getUrlParameters = () ->
   )
   return map
 
+renderSentence = (sentence, ref_hierarchy, translations, lang) ->
+  console.log ref_hierarchy
+  console.log translations
+  idnum = 0
+  while $('#R' + idnum).length > 0
+    idnum += 1
+  ref_hierarchy_with_ids = addIdsToHierarchy(ref_hierarchy, 'R' + idnum)
+  console.log ref_hierarchy_with_ids
+  $('#sentenceDisplay').append(
+    makeDivs(ref_hierarchy_with_ids, lang, translations, getMaxDepth(ref_hierarchy_with_ids) - 1)
+  ).append('<br>')
+
+addSentence = root.addSentence = (sentence, lang) ->
+  addSentences([sentence], lang)
+
+addSentences = root.addSentences = (sentences, lang) ->
+  if not lang?
+    lang = getUrlParameters()['lang'] ? 'en'
+  parseHierarchyAndTranslationsForLang = (sentence, callback) ->
+    now.getParseHierarchyAndTranslations(sentence, lang, (ref_hierarchy,translations) -> callback(null, [ref_hierarchy,translations]))
+  async.mapSeries(sentences, parseHierarchyAndTranslationsForLang, (err, results) ->
+    for i in [0...results.length]
+      sentence = sentences[i]
+      [ref_hierarchy,translations] = results[i]
+      renderSentence(sentence, ref_hierarchy, translations, lang)
+  )
+
 now.ready(() ->
   #$(document).tooltip({track: true, show:false, hide:false})
   phraseText = getUrlParameters()['sentence'].split('(').join(' [ ').split(')').join(' ] ').split('  ').join(' ') ? 'the cat jumped over the dog'
   console.log phraseText
   lang = getUrlParameters()['lang'] ? 'en'
-  now.getParseHierarchyAndTranslations(phraseText, lang, (ref_hierarchy, translations) ->
-  #ref_hierarchy = ['会議', ['中に', ['遊ぶ', ['のは', ['やめなさい']]]]]
-  #ref_hierarchy = [['私の', ['猫が']], '家で', '鼠を', ['食べた']]
-  #ref_hierarchy = [[['私 の'], '猫 が', '鼠 を'], '食べた']
-  #ref_hierarchy = [['私 の', '猫 が'], '家 で', ['鼠 を', '食べた']]
-  #ref_hierarchy = [['会議 中 に  '], [['遊ぶ の は  '], ['やめ なさい ']]]
-  #ref_hierarchy = [[['私', 'の'], ['猫', 'が']], ['家', 'で'], [['青い'], ['鼠', 'を']], ['食べた']]
-  #now.getTranslationsForParseHierarchy(ref_hierarchy, lang, (translations) ->
-    console.log ref_hierarchy
-    console.log translations
-    #root.ref_hierarchy = ref_hierarchy
-    #root.translations = translations
-    ref_hierarchy_with_ids = addIdsToHierarchy(ref_hierarchy)
-    console.log ref_hierarchy_with_ids
-    $('body').css('display', 'table').append(
-      makeDivs(ref_hierarchy_with_ids, lang, translations, getMaxDepth(ref_hierarchy_with_ids) - 1)
-    )
-  )
+  sentences = [phraseText]
+  addSentences(sentences, lang)
 )
+
