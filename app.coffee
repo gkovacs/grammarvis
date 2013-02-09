@@ -14,8 +14,6 @@ https = require 'https'
 
 fs = require 'fs'
 
-nowjsText = fs.readFileSync('nowjstext.js', 'utf-8')
-
 cmdArgs = (x for x in process.argv when x.indexOf('node') == -1 and x.indexOf('iced') == -1 and x.indexOf('coffee') == -1 and x.indexOf('supervisor') == -1)
 
 if cmdArgs.length > 0 and cmdArgs[0] == 'https'
