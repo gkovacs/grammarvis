@@ -11,10 +11,10 @@ do ($) ->
     #colors = 'FECA86420'
     return '#' + (colors[colors.length - depth - 1] for i in [0..5]).join('')
 
-  $.fn.borderStuff = (depth, color) ->
+  $.fn.borderStuff = (depth, maxdepth, color) ->
     #if not width?
     width = 3
-    maxdepth = getMaxDepth() #getMaxDepth('R')
+    #maxdepth = getMaxDepth('R') #getMaxDepth('R')
     ###
     depth = $(this).parents().attr('depth')
     console.log this.parent()
@@ -74,7 +74,7 @@ do ($) ->
     this.append(shortTranslationDiv)
     #this.addClass(text.split(' ').join('-'))
     this.mouseover(() =>
-      console.log this.attr('hovertext')
+      #console.log this.attr('hovertext')
       this.css('background-color', 'yellow')
       for x in $('.bordered')
         $(x).css('background-color', $(x).attr('color'))
@@ -87,11 +87,11 @@ do ($) ->
         for sibling in siblings
           $('#' + sibling).showAsSibling('lightblue')
         currentId = parent
-        console.log currentId
+        #console.log currentId
       if getChildrenOfId(idNum).length == 0
         this.showAsSibling('yellow')
       else
-        console.log idNum
+        #console.log idNum
         for immediateChild in getChildrenOfId(idNum)
           $('#' + immediateChild).showAsSibling('pink')
       this.css('background-color', 'yellow')
@@ -139,14 +139,24 @@ getMaxDepth = root.getMaxDepth = (id) ->
 '''
 
 getMaxDepth = root.getMaxDepth = (subtree) ->
-  if not subtree?
-    subtree = root.ref_hierarchy
+  #if not subtree?
+  #  subtree = root.ref_hierarchy_with_ids
   if typeof subtree != typeof []
     return 0
   maxval = 0
   for child in subtree
     maxval = Math.max(maxval, getMaxDepth(child)+1)
   return maxval
+
+'''
+getMaxDepth = root.getMaxDepth = (id) ->
+  if not id?
+    id = 'R'
+  maxval = 0
+  for childId in getChildrenOfId(id)
+    maxval = Math.max(maxval, getMaxDepth(childId) + 1)
+  return maxval
+'''
 
 getChildrenOfId = root.getChildrenOfId = (id) ->
   return ($(x).attr('id') for x in $('#' + id).children('.textRegion'))
@@ -176,7 +186,7 @@ hierarchyWithIdToTerminals = (hierarchy, lang) ->
     else
       return children.join(' ')
 
-makeDivs = (subHierarchy, lang, depth=1) ->
+makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
   basediv = $('<div>')
   id = subHierarchy.id
   contentHierarchy = subHierarchy[..]
@@ -185,21 +195,21 @@ makeDivs = (subHierarchy, lang, depth=1) ->
   foreignText = hierarchyWithIdToTerminals(subHierarchy, lang)
   console.log 'foreign text: ' + foreignText
   basediv.attr('foreignText', foreignText)
-  translation = root.translations[foreignText]
+  translation = translations[foreignText]
   basediv.attr('translation', translation)
   basediv.hoverId()
   #basediv.hoverText(translations[currentText])
   if contentHierarchy.length > 1
-    basediv.borderStuff(depth)
+    basediv.borderStuff(depth, maxdepth)
     for child in contentHierarchy
-      basediv.append makeDivs(child, lang, depth+1)
+      basediv.append makeDivs(child, lang, translations, maxdepth, depth+1)
   else if contentHierarchy.length == 1
     if typeof contentHierarchy[0] == typeof ''
-      basediv.borderStuff(depth, 'white')
+      basediv.borderStuff(depth, maxdepth, 'white')
         #.css('font-size', 10+depth*10)
         .text(contentHierarchy[0]).hoverId()
     else
-      basediv.borderStuff(depth, 'white')
+      basediv.borderStuff(depth, maxdepth, 'white')
         #.css('font-size', 20+depth*10)
         .text(contentHierarchy[0]).hoverId()
 
@@ -225,10 +235,10 @@ getUrlParameters = () ->
 
 now.ready(() ->
   #$(document).tooltip({track: true, show:false, hide:false})
-  root.phraseText = getUrlParameters()['sentence'].split('(').join(' [ ').split(')').join(' ] ').split('  ').join(' ') ? 'the cat jumped over the dog'
-  console.log root.phraseText
+  phraseText = getUrlParameters()['sentence'].split('(').join(' [ ').split(')').join(' ] ').split('  ').join(' ') ? 'the cat jumped over the dog'
+  console.log phraseText
   lang = getUrlParameters()['lang'] ? 'en'
-  now.getParseHierarchyAndTranslations(root.phraseText, lang, (ref_hierarchy, translations) ->
+  now.getParseHierarchyAndTranslations(phraseText, lang, (ref_hierarchy, translations) ->
   #ref_hierarchy = ['会議', ['中に', ['遊ぶ', ['のは', ['やめなさい']]]]]
   #ref_hierarchy = [['私の', ['猫が']], '家で', '鼠を', ['食べた']]
   #ref_hierarchy = [[['私 の'], '猫 が', '鼠 を'], '食べた']
@@ -238,12 +248,12 @@ now.ready(() ->
   #now.getTranslationsForParseHierarchy(ref_hierarchy, lang, (translations) ->
     console.log ref_hierarchy
     console.log translations
-    root.ref_hierarchy = ref_hierarchy
-    root.translations = translations
-    ref_hierarchy_with_ids = root.ref_hierarchy_with_ids = addIdsToHierarchy(ref_hierarchy)
+    #root.ref_hierarchy = ref_hierarchy
+    #root.translations = translations
+    ref_hierarchy_with_ids = addIdsToHierarchy(ref_hierarchy)
     console.log ref_hierarchy_with_ids
     $('body').css('display', 'table').append(
-      makeDivs(ref_hierarchy_with_ids, lang)
+      makeDivs(ref_hierarchy_with_ids, lang, translations, getMaxDepth(ref_hierarchy_with_ids) - 1)
     )
   )
 )
