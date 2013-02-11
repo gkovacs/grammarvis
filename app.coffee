@@ -212,10 +212,10 @@ everyone.now.getTranslationsForParseHierarchy = getTranslationsForParseHierarchy
 escapeshell = (shellcmd) ->
   return '"'+shellcmd.replace(/(["\s'$`\\])/g,'\\$1')+'"'
 
-everyone.now.getParseHierarchyAndTranslations = (sentence, lang, callback) ->
+getParseHierarchyAndTranslations = everyone.now.getParseHierarchyAndTranslations = (sentence, lang, callback) ->
   console.log "getting constituents and translations"
   console.log "lang: " + lang
-  sentence = sentence.trim)
+  sentence = sentence.trim()
   if lang == 'ja'
     exec('./japanese-parse.py ' + escapeshell(sentence.trim()), (error, stdout, stderr) ->
       hierarchy = JSON.parse(stdout)
@@ -231,7 +231,15 @@ everyone.now.getParseHierarchyAndTranslations = (sentence, lang, callback) ->
       )
     )
 
-everyone.now.getConstituentsAndTranslations = (sentence, lang, callback) ->
+app.get('/getParseHierarchyAndTranslations', (req, res) ->
+  sentence = req.query.sentence.toString()
+  lang = req.query.lang.toString()
+  getParseHierarchyAndTranslations(sentence, lang, (hierarchy, translations) ->
+    res.end(JSON.stringify({'hierarchy': hierarchy, 'translations': translations}))
+  )
+)
+
+getConstituentsAndTranslations = everyone.now.getConstituentsAndTranslations = (sentence, lang, callback) ->
   getParse(sentence, lang,(parse) ->
     constituentsText = getParseConstituents(parse, lang)
     console.log constituentsText

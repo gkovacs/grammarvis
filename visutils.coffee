@@ -233,7 +233,7 @@ getUrlParameters = root.getUrlParameters = () ->
   )
   return map
 
-renderSentence = (sentence, ref_hierarchy, translations, lang) ->
+renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget) ->
   console.log ref_hierarchy
   console.log translations
   idnum = 0
@@ -241,22 +241,37 @@ renderSentence = (sentence, ref_hierarchy, translations, lang) ->
     idnum += 1
   ref_hierarchy_with_ids = addIdsToHierarchy(ref_hierarchy, 'R' + idnum)
   console.log ref_hierarchy_with_ids
-  $('#sentenceDisplay').append(
+  renderTarget.append(
     makeDivs(ref_hierarchy_with_ids, lang, translations, getMaxDepth(ref_hierarchy_with_ids) - 1)
   ).append('<br>')
 
-addSentence = root.addSentence = (sentence, lang) ->
-  addSentences([sentence], lang)
+addSentence = root.addSentence = (sentence, lang, renderTarget) ->
+  addSentences([sentence], lang, renderTarget)
 
-addSentences = root.addSentences = (sentences, lang) ->
-  if not lang?
+if not root.serverLocation?
+  root.serverLocation = 'https://localhost:1358'
+
+addSentences = root.addSentences = (sentences, lang, renderTarget) ->
+  if not lang? and not renderTarget?
     lang = getUrlParameters()['lang'] ? 'en'
+    renderTarget = $('#sentenceDisplay')
+  if not renderTarget?
+    renderTarget = $('#sentenceDisplay')
   parseHierarchyAndTranslationsForLang = (sentence, callback) ->
-    now.getParseHierarchyAndTranslations(sentence, lang, (ref_hierarchy,translations) -> callback(null, [ref_hierarchy,translations]))
+    #now.getParseHierarchyAndTranslations(sentence, lang, (ref_hierarchy,translations) -> callback(null, [ref_hierarchy,translations]))
+    $.get(root.serverLocation + '/getParseHierarchyAndTranslations?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang), (resultData, resultStatus) ->
+      resultData = JSON.parse(resultData)
+      currentPair = [resultData.hierarchy, resultData.translations]
+      console.log currentPair
+      callback(null, currentPair)
+    )
   async.mapSeries(sentences, parseHierarchyAndTranslationsForLang, (err, results) ->
     for i in [0...results.length]
       sentence = sentences[i]
       [ref_hierarchy,translations] = results[i]
-      renderSentence(sentence, ref_hierarchy, translations, lang)
+      renderSentence(sentence, ref_hierarchy, translations, lang, renderTarget)
   )
+
+console.log 'visutils loaded'
+root.addSentence = addSentence
 
