@@ -7,7 +7,7 @@ do ($) ->
   depthToColor = (depth) ->
     #return ['white', 'blue', 'green', 'yellow', 'red', 'orange'][depth]
     #colors = '0123456789ABCDEF'
-    colors = '02468ACEF'
+    colors = '00000000000012345678ABCDEF'
     #colors = 'FECA86420'
     return '#' + (colors[colors.length - depth - 1] for i in [0..5]).join('')
 
@@ -193,7 +193,7 @@ makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
   basediv.addClass('hovertext').attr('id', id)
   basediv.addClass('hovertext').addClass('textRegion')
   foreignText = hierarchyWithIdToTerminals(subHierarchy, lang)
-  console.log 'foreign text: ' + foreignText
+  #console.log 'foreign text: ' + foreignText
   basediv.attr('foreignText', foreignText)
   translation = translations[foreignText]
   basediv.attr('translation', translation)
@@ -249,7 +249,7 @@ addSentence = root.addSentence = (sentence, lang, renderTarget) ->
   addSentences([sentence], lang, renderTarget)
 
 if not root.serverLocation?
-  root.serverLocation = 'https://localhost:1358'
+  root.serverLocation = 'https://geza.csail.mit.edu:1358'
 
 addSentences = root.addSentences = (sentences, lang, renderTarget) ->
   if not lang? and not renderTarget?
@@ -262,7 +262,7 @@ addSentences = root.addSentences = (sentences, lang, renderTarget) ->
     $.get(root.serverLocation + '/getParseHierarchyAndTranslations?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang), (resultData, resultStatus) ->
       resultData = JSON.parse(resultData)
       currentPair = [resultData.hierarchy, resultData.translations]
-      console.log currentPair
+      #console.log currentPair
       callback(null, currentPair)
     )
   async.mapSeries(sentences, parseHierarchyAndTranslationsForLang, (err, results) ->
