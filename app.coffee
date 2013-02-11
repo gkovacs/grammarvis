@@ -16,7 +16,10 @@ fs = require 'fs'
 
 cmdArgs = (x for x in process.argv when x.indexOf('node') == -1 and x.indexOf('iced') == -1 and x.indexOf('coffee') == -1 and x.indexOf('supervisor') == -1)
 
-if cmdArgs.length > 0 and cmdArgs[0] == 'https'
+#console.log cmdArgs
+
+if cmdArgs.indexOf('https') != -1
+  console.log 'starting with https'
   https_options = {
     'key': fs.readFileSync('ssl-cert-snakeoil.key'),
     'cert': fs.readFileSync('ssl-cert-snakeoil.pem'),
@@ -77,6 +80,22 @@ app.post('/pull', (req, res) ->
   exec('git pull origin master', console.log)
   res.send 'done'
 )
+
+ocrServiceURL = null
+
+getOCRServiceURL = (callback) ->
+  if ocrServiceURL?
+    callback(ocrServiceURL)
+  else
+    request.get('http://transgame.csail.mit.edu:9537/?varname=win7ipaddress', (error, result, body) ->
+      ocrServiceURL = 'http://' + body.trim() + ':8080/'
+      callback(ocrServiceURL)
+    )
+
+everyone.now.getOCR = getOCR = (image, lang, callback) ->
+  request.post({'url': ocrServiceURL, 'body': image}, (error, result, body) ->
+    callback(body)
+  )
 
 everyone.now.getParse = getParse = (sentence, lang, callback) ->
   request.get('http://localhost:3555/parse?lang=' + lang + '&sentence=' + sentence, (error, result, data) ->
@@ -196,9 +215,9 @@ escapeshell = (shellcmd) ->
 everyone.now.getParseHierarchyAndTranslations = (sentence, lang, callback) ->
   console.log "getting constituents and translations"
   console.log "lang: " + lang
+  sentence = sentence.trim)
   if lang == 'ja'
-    exec('./japanese-parse.py ' + escapeshell(sentence), (error, stdout, stderr) ->
-      #console.log "stdout is:"
+    exec('./japanese-parse.py ' + escapeshell(sentence.trim()), (error, stdout, stderr) ->
       hierarchy = JSON.parse(stdout)
       getTranslationsForParseHierarchy(hierarchy, lang, (translations) ->
         callback(hierarchy, translations)
