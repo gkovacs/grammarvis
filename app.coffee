@@ -437,31 +437,47 @@ everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
       englishDef = jdict.getDefinition(sentence)
       romaji = jdict.getRomaji(sentence)
       if englishDef? and englishDef.length > 0
-        output.push translatedText
-        output.push romaji
-        output.push englishDef
-      else if manualtranslation?
-        output.push manualtranslation
-        output.push romaji
-        output.push translatedText
+        if manualtranslation?
+          output.push manualtranslation
+          output.push romaji
+          output.push englishDef
+        else
+          output.push translatedText
+          output.push romaji
+          output.push englishDef
       else
-        output.push translatedText
-        output.push romaji
+        if manualtranslation?
+          output.push manualtranslation
+          output.push romaji
+          output.push translatedText
+        else
+          output.push translatedText
+          output.push romaji
     else if lang == 'zh'
       englishDef = cdict.getEnglishListForWord(sentence).join('; ')
       pinyin = cdict.getPinyin(sentence)
       if englishDef? and englishDef.length > 0
-        output.push translatedText
-        output.push pinyin
-        output.push englishDef
-      else if manualtranslation?
+        if manualtranslation?
+          output.push manualtranslation
+          output.push pinyin
+          output.push englishDef
+        else
+          output.push translatedText
+          output.push pinyin
+          output.push englishDef
+      else
+        if manualtranslation?
+          output.push manualtranslation
+          output.push pinyin
+          output.push translatedText
+        else
+          output.push translatedText
+          output.push pinyin
+    else
+      if manualtranslation?
         output.push manualtranslation
-        output.push pinyin
         output.push translatedText
       else
         output.push translatedText
-        output.push pinyin
-    else
-      output.push translatedText
     callback(output.join('\n'))
 
