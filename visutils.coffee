@@ -198,6 +198,18 @@ makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
   translation = translations[foreignText]
   basediv.attr('translation', translation)
   basediv.hoverId()
+  do (foreignText, translation, lang) ->
+    basediv.click(() ->
+      console.log 'clicked:'
+      console.log foreignText
+      console.log 'translation:'
+      shortTranslation = translation
+      if shortTranslation.indexOf('\n') != -1
+        shortTranslation = shortTranslation.split('\n')[0]
+      console.log shortTranslation
+      openTranslationPopup(foreignText, shortTranslation, lang)
+      return false
+    )
   #basediv.hoverText(translations[currentText])
   if contentHierarchy.length > 1
     basediv.borderStuff(depth, maxdepth)
@@ -250,6 +262,58 @@ addSentence = root.addSentence = (sentence, lang, renderTarget) ->
 
 if not root.serverLocation?
   root.serverLocation = ''
+
+submitTranslation = root.submitTranslation = (origPhrase, translation, lang) ->
+  console.log 'translation submitted'
+  console.log origPhrase
+  console.log translation
+  reqParams = {
+    'sentence': origPhrase,
+    'lang': lang,
+    'targetlang': 'en',
+    'translation': translation,
+  }
+  console.log root.serverLocation + '/submitTranslation?' + $.param(reqParams)
+  $.get(root.serverLocation + '/submitTranslation?' + $.param(reqParams))
+
+openTranslationPopup = root.openTranslationPopup = (sentenceToTranslate, translation, lang) ->
+  initializePopup(lang)
+  $('#sentenceToTranslate').text(sentenceToTranslate)
+  $('#translationInput').val(translation)
+  $('#popupTranslateDisplay').dialog('open')
+
+root.popupInitialized = false
+
+initializePopup = root.initializePopup = (lang) ->
+  if root.popupInitialized
+    return
+  root.popupInitialized = true
+  popupTranslateDisplay = $('''<div id="popupTranslateDisplay">Translation for <span id="sentenceToTranslate"></span><form action="javascript:void(0)" id="translationForm"><input type="text" id="translationInput" /><input type="hidden" value="submit" /></form></div>''')
+  popupTranslateDisplay.dialog({
+    'autoOpen': false,
+    'modal': false,
+    'title': '',
+    #'show': 'clip',
+    #'hide': 'clip',
+    #'position': ['right', 'top'],
+    'zIndex': 99,
+    #'width': '100%',
+    #'maxHeight': '500px',
+    'create': () ->
+      $(this).css("maxHeight", 500)
+      $('#translationInput').keypress((e) ->
+        if e.keyCode == 13 # enter pressed
+          inputtedText = $('#translationInput').val()
+          $('#popupTranslateDisplay').dialog('close')
+          if inputtedText == ''
+            return false
+          else
+            origPhrase = $('#sentenceToTranslate').text()
+            translation = $('#translationInput').val()
+            submitTranslation(origPhrase, translation, lang)
+            return false
+      )
+  }).css('max-height', '500px')
 
 addSentences = root.addSentences = (sentences, lang, renderTarget) ->
   if not lang? and not renderTarget?

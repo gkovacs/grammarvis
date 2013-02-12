@@ -12,6 +12,9 @@ app = express()
 http = require 'http'
 https = require 'https'
 
+redis = require 'redis'
+rclient = redis.createClient()
+
 fs = require 'fs'
 
 cmdArgs = (x for x in process.argv when x.indexOf('node') == -1 and x.indexOf('iced') == -1 and x.indexOf('coffee') == -1 and x.indexOf('supervisor') == -1)
@@ -239,6 +242,32 @@ app.get('/getParseHierarchyAndTranslations', (req, res) ->
   )
 )
 
+app.get('/submitTranslation', (req, res) ->
+  sentence = req.query.sentence.toString()
+  lang = req.query.lang.toString()
+  targetlang = req.query.targetlang ? 'en'
+  translation = req.query.translation.toString()
+  redisKey = 'manualtrans|' + lang + '_to_' + targetlang + '|' + sentence
+  rclient.set(redisKey, translation, () ->
+    res.end(translation)
+  )
+)
+
+getManualTranslation = (sentence, lang, targetlang, callback) ->
+  redisKey = 'manualtrans|' + lang + '_to_' + targetlang + '|' + sentence
+  rclient.get(redisKey, (err, result) ->
+    callback(result)
+  )
+
+app.get('/getTranslation', (req, res) ->
+  sentence = req.query.sentence.toString()
+  lang = req.query.lang.toString()
+  targetlang = req.query.targetlang ? 'en'
+  getManualTranslation(sentence, lang, targetlang, (translation) ->
+    res.end(translation)
+  )
+)
+
 getConstituentsAndTranslations = everyone.now.getConstituentsAndTranslations = (sentence, lang, callback) ->
   getParse(sentence, lang,(parse) ->
     constituentsText = getParseConstituents(parse, lang)
@@ -383,11 +412,22 @@ cdict = new chinesedict.ChineseDict(fs.readFileSync('cedict_full.txt', 'utf8'))
 
 #everyone.now.core.options.socketio.resource = 'https://localhost:1358/socket.io'
 
+app.get('/getFullTranslation', (req, res) ->
+  sentence = req.query.sentence.toString()
+  lang = req.query.lang.toString()
+  getTranslation(sentence, lang, (translation) ->
+    res.end(translation)
+  )
+)
+
 everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
   #if manualTranslations[sentence]?
   #   callback manualTranslations[sentence]
   #   return
-  translator.getTranslations(sentence, lang, 'en', (translation) ->
+  await
+    getManualTranslation(sentence, lang, 'en', defer(manualtranslation))
+    translator.getTranslations(sentence, lang, 'en', defer(translation))
+  do (manualtranslation, translation) ->
     output = []
     console.log translation
     translatedText = translation[0].TranslatedText
@@ -400,6 +440,10 @@ everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
         output.push translatedText
         output.push romaji
         output.push englishDef
+      else if manualtranslation?
+        output.push manualtranslation
+        output.push romaji
+        output.push translatedText
       else
         output.push translatedText
         output.push romaji
@@ -410,11 +454,14 @@ everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
         output.push translatedText
         output.push pinyin
         output.push englishDef
+      else if manualtranslation?
+        output.push manualtranslation
+        output.push pinyin
+        output.push translatedText
       else
         output.push translatedText
         output.push pinyin
     else
       output.push translatedText
     callback(output.join('\n'))
-  )
 
