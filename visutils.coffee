@@ -249,7 +249,7 @@ addSentence = root.addSentence = (sentence, lang, renderTarget) ->
   addSentences([sentence], lang, renderTarget)
 
 if not root.serverLocation?
-  root.serverLocation = '/'
+  root.serverLocation = ''
 
 addSentences = root.addSentences = (sentences, lang, renderTarget) ->
   if not lang? and not renderTarget?
