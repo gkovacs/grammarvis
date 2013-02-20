@@ -17,6 +17,9 @@ rclient = redis.createClient()
 
 fs = require 'fs'
 
+async = require 'async'
+memoize = async.memoize
+
 cmdArgs = (x for x in process.argv when x.indexOf('node') == -1 and x.indexOf('iced') == -1 and x.indexOf('coffee') == -1 and x.indexOf('supervisor') == -1)
 
 #console.log cmdArgs
@@ -220,7 +223,7 @@ getParseHierarchyAndTranslations = everyone.now.getParseHierarchyAndTranslations
   console.log "lang: " + lang
   sentence = sentence.trim()
   if lang == 'ja'
-    exec('./japanese-parse.py ' + escapeshell(sentence.trim()), (error, stdout, stderr) ->
+    exec('./japanese-parse.py ' + escapeshell(sentence.split('\n').join(' ').split(' ').join('')), (error, stdout, stderr) ->
       hierarchy = JSON.parse(stdout)
       getTranslationsForParseHierarchy(hierarchy, lang, (translations) ->
         callback(hierarchy, translations)
@@ -233,6 +236,37 @@ getParseHierarchyAndTranslations = everyone.now.getParseHierarchyAndTranslations
         callback(hierarchy, translations)
       )
     )
+
+getOCRService = (callback) ->
+  request.get('http://transgame.csail.mit.edu:9537/?varname=win7ipaddress', (error, result, body) ->
+    callback(body)
+  )
+
+getOCRService = memoize(getOCRService)
+
+app.get('/getOCRServiceIP', (req, res) ->
+  getOCRService((ocrIP) ->
+    res.end ocrIP
+  )
+)
+
+app.get('/getOCR', (req, res) ->
+  lang = req.query.lang ? 'en'
+  data = req.query.data
+  dataPrefix = 'data:image/png;base64,'
+  if data.indexOf(dataPrefix) == 0
+    data = data[dataPrefix.length..]
+  #data = decodeURIComponent(data)
+  data = data.split(' ').join('+')
+  console.log data
+  getOCRService((ocrIP) ->
+    console.log ocrIP
+    #res.end data
+    request.post({'url': 'http://' + ocrIP + ':8080/', 'body': data, 'headers': {'content-type': 'application/x-www-form-urlencoded', 'Content-Length': data.length}}, (error, result, body) ->
+      res.end body
+    )
+  )
+)
 
 app.get('/getParseHierarchyAndTranslations', (req, res) ->
   sentence = req.query.sentence.toString()
@@ -409,6 +443,14 @@ japanesedict = require './japanesedict_v2'
 jdict = new japanesedict.JapaneseDict(fs.readFileSync('edict2_full.txt', 'utf8'))
 chinesedict = require './chinesedict'
 cdict = new chinesedict.ChineseDict(fs.readFileSync('cedict_full.txt', 'utf8'))
+wiktionarydict = require './wiktionarydict'
+frdict = new wiktionarydict.WiktionaryDict(fs.readFileSync('fra-eng.txt', 'utf8'))
+dedict = new wiktionarydict.WiktionaryDict(fs.readFileSync('deu-eng.txt', 'utf8'))
+
+dictionaryList = {
+  'fr': frdict,
+  'de': dedict,
+}
 
 #everyone.now.core.options.socketio.resource = 'https://localhost:1358/socket.io'
 
@@ -420,6 +462,10 @@ app.get('/getFullTranslation', (req, res) ->
   )
 )
 
+stripPunctuation = (word) ->
+  punctuation = '!,()_-'
+  return (c for c in word when punctuation.indexOf(c) == -1).join('')
+
 everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
   #if manualTranslations[sentence]?
   #   callback manualTranslations[sentence]
@@ -429,55 +475,34 @@ everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
     translator.getTranslations(sentence, lang, 'en', defer(translation))
   do (manualtranslation, translation) ->
     output = []
-    console.log translation
+    #console.log translation
     translatedText = translation[0].TranslatedText
     if not translatedText? or translatedText.length < 1
       translatedText = translation[0].translatedText
+    englishDef = null
+    romaji = null
     if lang == 'ja'
       englishDef = jdict.getDefinition(sentence)
       romaji = jdict.getRomaji(sentence)
-      if englishDef? and englishDef.length > 0
-        if manualtranslation?
-          output.push manualtranslation
-          output.push romaji
-          output.push englishDef
-        else
-          output.push translatedText
-          output.push romaji
-          output.push englishDef
-      else
-        if manualtranslation?
-          output.push manualtranslation
-          output.push romaji
-          output.push translatedText
-        else
-          output.push translatedText
-          output.push romaji
-    else if lang == 'zh'
+    if lang == 'zh'
       englishDef = cdict.getEnglishListForWord(sentence).join('; ')
-      pinyin = cdict.getPinyin(sentence)
+      romaji = cdict.getPinyin(sentence)
+    if dictionaryList[lang]?
+      ldict = dictionaryList[lang]
+      englishDef = ldict.getEnglishListForWord(sentence).join('; ')
+      if englishDef.length == 0
+        englishDef = ldict.getEnglishListForWord(stripPunctuation(sentence)).join('; ')
+    if manualtranslation?
+      output.push manualtranslation
+      if romaji?
+        output.push romaji
       if englishDef? and englishDef.length > 0
-        if manualtranslation?
-          output.push manualtranslation
-          output.push pinyin
-          output.push englishDef
-        else
-          output.push translatedText
-          output.push pinyin
-          output.push englishDef
-      else
-        if manualtranslation?
-          output.push manualtranslation
-          output.push pinyin
-          output.push translatedText
-        else
-          output.push translatedText
-          output.push pinyin
+        output.push englishDef
     else
-      if manualtranslation?
-        output.push manualtranslation
-        output.push translatedText
-      else
-        output.push translatedText
+      output.push translatedText
+      if romaji?
+        output.push romaji
+      if englishDef? and englishDef.length > 0
+        output.push englishDef
     callback(output.join('\n'))
 

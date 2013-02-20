@@ -186,6 +186,24 @@ hierarchyWithIdToTerminals = (hierarchy, lang) ->
     else
       return children.join(' ')
 
+initializeHover = (basediv) ->
+  contentHierarchy = JSON.parse(basediv.attr('contentHierarchy'))
+  depth = basediv.attr('depth')
+  maxdepth = basediv.attr('maxdepth')
+  basediv.hoverId()
+  if contentHierarchy.length > 1
+    basediv.borderStuff(depth, maxdepth)
+  else if contentHierarchy.length == 1
+    if typeof contentHierarchy[0] == typeof ''
+      basediv.borderStuff(depth, maxdepth, 'white')
+        #.css('font-size', 10+depth*10)
+        .text(contentHierarchy[0]).hoverId()
+    else
+      basediv.borderStuff(depth, maxdepth, 'white')
+        #.css('font-size', 20+depth*10)
+        .text(contentHierarchy[0]).hoverId()
+    
+
 makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
   basediv = $('<div>')
   id = subHierarchy.id
@@ -197,20 +215,26 @@ makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
   basediv.attr('foreignText', foreignText)
   translation = translations[foreignText]
   basediv.attr('translation', translation)
+  basediv.attr('depth', depth)
+  basediv.attr('maxdepth', maxdepth)
+  basediv.attr('contentHierarchy', JSON.stringify(contentHierarchy))
   basediv.hoverId()
-  do (foreignText, translation, lang) ->
+  do (id) ->
     basediv.click(() ->
+      lForeignText = $('#' + id).attr('foreignText')
+      lTranslation = $('#' + id).attr('translation')
       console.log 'clicked:'
-      console.log foreignText
+      console.log lForeignText
       console.log 'translation:'
-      shortTranslation = translation
+      shortTranslation = lTranslation
       if shortTranslation.indexOf('\n') != -1
         shortTranslation = shortTranslation.split('\n')[0]
       console.log shortTranslation
-      openTranslationPopup(foreignText, shortTranslation, lang)
+      openTranslationPopup(foreignText, shortTranslation, lang, id)
       return false
     )
   #basediv.hoverText(translations[currentText])
+  initializeHover(basediv)
   if contentHierarchy.length > 1
     basediv.borderStuff(depth, maxdepth)
     for child in contentHierarchy
@@ -257,8 +281,8 @@ renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget) ->
     makeDivs(ref_hierarchy_with_ids, lang, translations, getMaxDepth(ref_hierarchy_with_ids) - 1)
   ).append('<br>')
 
-addSentence = root.addSentence = (sentence, lang, renderTarget) ->
-  addSentences([sentence], lang, renderTarget)
+addSentence = root.addSentence = (sentence, lang, renderTarget, clearExisting=false) ->
+  addSentences([sentence], lang, renderTarget, clearExisting)
 
 if not root.serverLocation?
   root.serverLocation = ''
@@ -276,15 +300,29 @@ submitTranslation = root.submitTranslation = (origPhrase, translation, lang) ->
   console.log root.serverLocation + '/submitTranslation?' + $.param(reqParams)
   $.get(root.serverLocation + '/submitTranslation?' + $.param(reqParams))
 
-openTranslationPopup = root.openTranslationPopup = (sentenceToTranslate, translation, lang) ->
-  initializePopup(lang)
+updateTranslation = (id, translation) ->
+  basediv = $('#' + id)
+  fullTranslation = basediv.attr('translation').split('\n')
+  fullTranslation[0] = translation
+  basediv.attr('translation', fullTranslation.join('\n'))
+  basediv.hoverId()
+  initializeHover(basediv)
+  parentId = id.split('_')[...-1].join('_')
+  parentdiv = $('#' + parentId)
+  initializeHover(parentdiv)
+  basediv.mouseover()
+
+openTranslationPopup = root.openTranslationPopup = (sentenceToTranslate, translation, lang, id) ->
+  initializePopup()
   $('#sentenceToTranslate').text(sentenceToTranslate)
   $('#translationInput').val(translation)
+  $('#popupTranslateDisplay').attr('translationForId', id)
+  $('#popupTranslateDisplay').attr('translationForLang', lang)
   $('#popupTranslateDisplay').dialog('open')
 
 root.popupInitialized = false
 
-initializePopup = root.initializePopup = (lang) ->
+initializePopup = root.initializePopup = () ->
   if root.popupInitialized
     return
   root.popupInitialized = true
@@ -310,12 +348,15 @@ initializePopup = root.initializePopup = (lang) ->
           else
             origPhrase = $('#sentenceToTranslate').text()
             translation = $('#translationInput').val()
+            lang = $('#popupTranslateDisplay').attr('translationForLang')
+            #callback(origPhrase, translation, lang)
             submitTranslation(origPhrase, translation, lang)
+            updateTranslation($('#popupTranslateDisplay').attr('translationForId'), translation)
             return false
       )
   }).css('max-height', '500px')
 
-addSentences = root.addSentences = (sentences, lang, renderTarget) ->
+addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting=false) ->
   if not lang? and not renderTarget?
     lang = getUrlParameters()['lang'] ? 'en'
     renderTarget = $('#sentenceDisplay')
@@ -330,6 +371,8 @@ addSentences = root.addSentences = (sentences, lang, renderTarget) ->
       callback(null, currentPair)
     )
   async.mapSeries(sentences, parseHierarchyAndTranslationsForLang, (err, results) ->
+    if clearExisting
+      renderTarget.html('')
     for i in [0...results.length]
       sentence = sentences[i]
       [ref_hierarchy,translations] = results[i]
