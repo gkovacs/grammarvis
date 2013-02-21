@@ -218,24 +218,36 @@ everyone.now.getTranslationsForParseHierarchy = getTranslationsForParseHierarchy
 escapeshell = (shellcmd) ->
   return '"'+shellcmd.replace(/(["\s'$`\\])/g,'\\$1')+'"'
 
+getParseCached = (sentence, lang, callback) ->
+  redisKey = 'parseHierarchy|' + lang + '|' + sentence
+  rclient.get(redisKey, (rerr, rparseres) ->
+    if rparseres?
+      hierarchy = JSON.parse(rparseres)
+      callback(hierarchy)
+      return
+    if lang == 'ja'
+      exec('./japanese-parse.py ' + escapeshell(sentence.split('\n').join(' ').split(' ').join('')), (error, stdout, stderr) ->
+        hierarchy = JSON.parse(stdout)
+        rclient.set(redisKey, JSON.stringify(hierarchy))
+        callback(hierarchy)
+      )
+    else
+      getParse(sentence, lang,(parse) ->
+        hierarchy = parseToHierarchy(parse, lang)
+        rclient.set(redisKey, JSON.stringify(hierarchy))
+        callback(hierarchy)
+      )
+  )
+
 getParseHierarchyAndTranslations = everyone.now.getParseHierarchyAndTranslations = (sentence, lang, callback) ->
   console.log "getting constituents and translations"
   console.log "lang: " + lang
   sentence = sentence.trim()
-  if lang == 'ja'
-    exec('./japanese-parse.py ' + escapeshell(sentence.split('\n').join(' ').split(' ').join('')), (error, stdout, stderr) ->
-      hierarchy = JSON.parse(stdout)
-      getTranslationsForParseHierarchy(hierarchy, lang, (translations) ->
-        callback(hierarchy, translations)
-      )
+  getParseCached(sentence, lang, (hierarchy) ->
+    getTranslationsForParseHierarchy(hierarchy, lang, (translations) ->
+      callback(hierarchy, translations)
     )
-  else
-    getParse(sentence, lang,(parse) ->
-      hierarchy = parseToHierarchy(parse, lang)
-      getTranslationsForParseHierarchy(hierarchy, lang, (translations) ->
-        callback(hierarchy, translations)
-      )
-    )
+  )
 
 getOCRService = (callback) ->
   request.get('http://transgame.csail.mit.edu:9537/?varname=win7ipaddress', (error, result, body) ->
@@ -478,7 +490,7 @@ everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
     #console.log translation
     translatedText = translation[0].TranslatedText
     if not translatedText? or translatedText.length < 1
-      translatedText = translation[0].translatedText
+      translatedText = $('<span>').html(translation[0].translatedText).text()
     englishDef = null
     romaji = null
     if lang == 'ja'

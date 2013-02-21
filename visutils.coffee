@@ -25,19 +25,27 @@ do ($) ->
     ###
     #this.css('display', 'table-cell').css('vertical-align', 'middle')
     #this.css('font-size', (15+depth*3) + 'pt')
-    padding = 15
+    padding = 8
+    fontSize = 18
+    lang = this.attr('foreignLang')
+    if lang == 'zh' or lang == 'ja'
+      fontSize = 32
     margin = 0
     if color == 'white' # terminals
-      margin = (maxdepth-depth+1)*15 + (maxdepth-depth)
+      margin = (maxdepth-depth+1)*padding + (maxdepth-depth)
       #padding = (maxdepth-depth+1)*15 + (maxdepth-depth) # this last term to account for the border of 1
     if not color?
      color = depthToColor(depth)
-    return this.addClass('bordered').css('position', 'relative').css('padding', padding + 'px').css('font-size', '32px').attr('color', color).css('background-color', color).css('border-width', 1).css('border-style', 'solid').css('float', 'left').attr('depth', depth).css('border-color', 'black').css('border-radius', '10px').css('margin-top', margin).css('margin-bottom', margin)
+    this.addClass('bordered').css('position', 'relative').css('padding', padding + 'px').css('font-size', fontSize).attr('color', color).css('background-color', color).css('border-width', 1).css('border-style', 'solid').css('float', 'left').attr('depth', depth).css('border-color', 'black').css('border-radius', '10px').css('margin-top', margin).css('margin-bottom', margin)
+    if this.attr('id').indexOf('_') == -1
+      this.css('margin-top', $('#H' + this.attr('id')).height() )
+    return this
 
   $.fn.showAsSibling = (color) ->
-    if not color?
-      color = 'lightblue'
-    this.css('background-color', color)
+    #if not color?
+    #  color = 'lightblue'
+    if color?
+      this.css('background-color', color)
     siblingToShow = $('#H' + this.attr('id'))
     siblingToShow.show()
     this.addClass('hovered')
@@ -54,6 +62,7 @@ do ($) ->
     siblingToShow.mouseover(() => 
       return false
     )
+    return this
 
   $.fn.hoverId = () ->
     text = this.attr('translation')
@@ -102,7 +111,13 @@ do ($) ->
         $(x).css('background-color', $(x).attr('color'))
       $('.hovered').removeClass('hovered')
       $('.Hovertips').hide()
+      myId = this.attr('id')
+      rootId = myId
+      if myId.indexOf('_') != -1
+        rootId = myId[...myId.indexOf('_')]
+      console.log rootId
       this.css('background-color', this.attr('color'))
+      $('#' + rootId).showAsSibling()
     )
     return this
 
@@ -213,6 +228,7 @@ makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
   foreignText = hierarchyWithIdToTerminals(subHierarchy, lang)
   #console.log 'foreign text: ' + foreignText
   basediv.attr('foreignText', foreignText)
+  basediv.attr('foreignLang', lang)
   translation = translations[foreignText]
   basediv.attr('translation', translation)
   basediv.attr('depth', depth)
@@ -248,6 +264,7 @@ makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
       basediv.borderStuff(depth, maxdepth, 'white')
         #.css('font-size', 20+depth*10)
         .text(contentHierarchy[0]).hoverId()
+  return basediv
 
 addIdsToHierarchy = (hierarchy, myId='R0') ->
   if typeof hierarchy == typeof []
@@ -269,6 +286,14 @@ getUrlParameters = root.getUrlParameters = () ->
   )
   return map
 
+callOnceElementAvailable = (element, callback) ->
+  if $(element).length > 0
+    callback()
+  else
+    setTimeout(() ->
+      callOnceElementAvailable(element, callback)
+    , 10)
+
 renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget) ->
   console.log ref_hierarchy
   console.log translations
@@ -277,9 +302,14 @@ renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget) ->
     idnum += 1
   ref_hierarchy_with_ids = addIdsToHierarchy(ref_hierarchy, 'R' + idnum)
   console.log ref_hierarchy_with_ids
-  renderTarget.append(
-    makeDivs(ref_hierarchy_with_ids, lang, translations, getMaxDepth(ref_hierarchy_with_ids) - 1)
-  ).append('<br>')
+  rootBaseDiv = makeDivs(ref_hierarchy_with_ids, lang, translations, getMaxDepth(ref_hierarchy_with_ids) - 1)
+  renderTarget.append(rootBaseDiv).append('<br>')
+  rootBaseDiv.showAsSibling()
+  #currentTopMargin = parseInt(rootBaseDiv.css('margin-top').split('px').join(''))
+  callOnceElementAvailable('#HR' + idnum, () ->
+    currentTopMargin = 0
+    rootBaseDiv.css('margin-top', currentTopMargin + $('#HR' + idnum).height())
+  , 10)
 
 addSentence = root.addSentence = (sentence, lang, renderTarget, clearExisting=false) ->
   addSentences([sentence], lang, renderTarget, clearExisting)
@@ -301,16 +331,21 @@ submitTranslation = root.submitTranslation = (origPhrase, translation, lang) ->
   $.get(root.serverLocation + '/submitTranslation?' + $.param(reqParams))
 
 updateTranslation = (id, translation) ->
+  console.log 'updateTranslation for:' + id
   basediv = $('#' + id)
   fullTranslation = basediv.attr('translation').split('\n')
   fullTranslation[0] = translation
   basediv.attr('translation', fullTranslation.join('\n'))
   basediv.hoverId()
-  initializeHover(basediv)
-  parentId = id.split('_')[...-1].join('_')
-  parentdiv = $('#' + parentId)
-  initializeHover(parentdiv)
-  basediv.mouseover()
+  #initializeHover(basediv)
+  $('#H' + id).text(translation)
+  if id.indexOf('_') != -1
+    parentId = id.split('_')[...-1].join('_')
+    parentdiv = $('#' + parentId)
+    #initializeHover(parentdiv)
+    #basediv.mouseover()
+  else
+    basediv.css('margin-top', $('#H' + id).height() )
 
 openTranslationPopup = root.openTranslationPopup = (sentenceToTranslate, translation, lang, id) ->
   initializePopup()
