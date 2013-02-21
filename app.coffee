@@ -184,6 +184,9 @@ parseToHierarchy = (parse, lang) ->
     return output[0]
   if output.length == 0
     return terminals(parse, lang)
+  currentText = terminals(parse, lang)
+  #if lang == 'ja' and doesWordExist(word, lang)
+  #  return currentText
   return output
 
 hierarchyToTerminals = (hierarchy, lang) ->
@@ -218,23 +221,57 @@ everyone.now.getTranslationsForParseHierarchy = getTranslationsForParseHierarchy
 escapeshell = (shellcmd) ->
   return '"'+shellcmd.replace(/(["\s'$`\\])/g,'\\$1')+'"'
 
+fixHierarchy = (hierarchy, lang) ->
+  if lang != 'ja'
+    return hierarchy
+  if hierarchy.length == 1 or hierarchy.length == 0 or (typeof hierarchy != typeof [])
+    return hierarchy
+  currentTerminals = hierarchyToTerminals(hierarchy, lang)
+  if doesWordExist(currentTerminals, lang)
+    return currentTerminals
+  output = []
+  i = 0
+  while i < hierarchy.length
+    current = hierarchy[i]
+    next = hierarchy[i+1]
+    next2 = hierarchy[i+2]
+    wlj3 = hierarchyToTerminals([current, next, next2], lang)
+    if doesWordExist(wlj3, lang)
+      output.push wlj3
+      i += 3
+      continue
+    wlj2 = hierarchyToTerminals([current, next], lang)
+    if doesWordExist(wlj2, lang)
+      output.push wlj2
+      i += 2
+      continue
+    output.push fixHierarchy(current, lang)
+    i += 1
+  return output
+
 getParseCached = (sentence, lang, callback) ->
-  redisKey = 'parseHierarchy|' + lang + '|' + sentence
+  rkeylang = lang
+  if rkeylang == 'ja'
+    rkeylang = 'ja_2'
+  redisKey = 'parseHierarchy|' + rkeylang + '|' + sentence
   rclient.get(redisKey, (rerr, rparseres) ->
     if rparseres?
       hierarchy = JSON.parse(rparseres)
+      hierarchy = fixHierarchy(hierarchy, lang)
       callback(hierarchy)
       return
     if lang == 'ja'
       exec('./japanese-parse.py ' + escapeshell(sentence.split('\n').join(' ').split(' ').join('')), (error, stdout, stderr) ->
         hierarchy = JSON.parse(stdout)
         rclient.set(redisKey, JSON.stringify(hierarchy))
+        hierarchy = fixHierarchy(hierarchy, lang)
         callback(hierarchy)
       )
     else
       getParse(sentence, lang,(parse) ->
         hierarchy = parseToHierarchy(parse, lang)
         rclient.set(redisKey, JSON.stringify(hierarchy))
+        hierarchy = fixHierarchy(hierarchy, lang)
         callback(hierarchy)
       )
   )
@@ -329,110 +366,6 @@ getConstituentsAndTranslations = everyone.now.getConstituentsAndTranslations = (
     callback(constituents, translations)
   )
 
-#getParse('Hilda est la fille de Grace Hazard Conkling (poète et professeur d\'anglais au Smith College)', 'fr', (parse) -> console.log parse)
-
-#console.log translator.getTranslations('你好吗', 'zh', 'en', (translation) -> console.log translation[0].TranslatedText)
-
-foreignText = '''
-Oh, Herr, bitte gib mir meine Sprache zurück,
-ich sehne mich nach Frieden und 'nem kleinen Stückchen Glück.
-Lass uns noch ein Wort verstehen in dieser schweren Zeit,
-öffne unsre Herzen, mach' die Hirne weit.
-
-Ich bin zum Bahnhof gerannt und war a little bit too late
-Auf meiner neuen Swatch war's schon kurz vor after eight.
-Ich suchte die Toilette, doch ich fand nur ein "McClean",
-ich brauchte noch Connection und ein Ticket nach Berlin.
-Draußen saßen Kids und hatten Fun mit einem Joint.
-Ich suchte eine Auskunft, doch es gab nur 'n Service Point.
-Mein Zug war leider abgefahr'n - das Traveln konnt' ich knicken.
-Da wollt ich Hähnchen essen, doch man gab mir nur McChicken.
-
-Oh, Herr bitte gib mir meine Sprache zurück,
-ich sehne mich nach Frieden und 'nem kleinen Stückchen Glück.
-Lass uns noch ein Wort verstehen in dieser schweren Zeit,
-öffne unsre Herzen, mach' die Hirne weit.
-
-Du versuchst mich upzudaten, doch mein Feedback turned dich ab.
-Du sagst, dass ich ein Wellness-Weekend dringend nötig hab.
-Du sagst, ich käm' mit good Vibrations wieder in den Flow.
-Du sagst, ich brauche Energy. Und ich denk: "Das sagst du so..."
-Statt Nachrichten bekomme ich den Infotainment-Flash.
-Ich sehne mich nach Bargeld, doch man gibt mir nicht mal Cash.
-Ich fühl' mich beim Communicating unsicher wie nie –
-da nützt mir auch kein Bodyguard. Ich brauch Security!
-
-Oh, Lord, bitte gib mir meine Language zurück,
-ich sehne mich nach Peace und 'nem kleinen Stückchen Glück,
-Lass uns noch ein Wort verstehn in dieser schweren Zeit,
-öffne unsre Herzen, mach' die Hirne weit.
-
-Ich will, dass beim Coffee-Shop "Kaffeehaus" oben draufsteht,
-oder dass beim Auto-Crash die "Lufttasche" aufgeht,
-und schön wär's, wenn wir Bodybuilder "Muskel-Mäster" nennen
-und wenn nur noch "Nordisch Geher" durch die Landschaft rennen...
-
-Oh, Lord, please help, denn meine Language macht mir Stress,
-ich sehne mich nach Peace und a bit of Happiness.
-Hilf uns, dass wir understand in dieser schweren Zeit,
-open unsre hearts und make die Hirne weit.
-
-Oh, Lord, please gib mir meine Language back,
-ich krieg hier bald die crisis, man, it has doch keinen Zweck.
-Let us noch a word verstehen, it goes me on the Geist,
-und gib, dass "Microsoft" bald wieder "Kleinweich" heißt.
-'''.split('\n')
-
-englishText = '''
-Oh, Lord, please give me my language back,
-I long for Frieden [peace] and a little bit of Glück [happiness].
-Let us understand a word in this difficult time,
-open our hearts, expand the brain.
-
-I ran to the train station and was "a little bit too late"
-on my new Swatch it was already just before "after eight."
-I looked for a toilet, but only found a "McClean,"
-I still needed "Connection" and a "Ticket" to Berlin.
-Outside sat "Kids" and had "Fun" with a "Joint."
-I looked for information, but there was only a "Service Point."
-My train was gone - "Traveln" I could do without.
-Then I wanted to eat "Hähnchen" [chicken], but there was only "McChicken."
-
-Oh, Lord, please give me my language back,
-I long for Frieden [peace] and a little bit of Glück [happiness].
-Let us understand a word in this difficult time,
-open our hearts, expand the brain.
-
-You try to "update" me, but my "Feedback turned" you off.
-You say I really need a "Wellness-Weekend."
-You say with "good Vibrations" I'd get back in the "Flow."
-You say I need "Energy." And I think: "So you say..."
-Instead of "Nachrichten" I get the "Infotainment-Flash."
-I'm longing for Bargeld [cash], but they don't even give me "Cash."
-When "Communicating," I feel insecure as never before –
-a "Bodyguard" is no use. I need "Security"!
-
-Oh, "Lord," please give me my "Language" back,
-I'm longing for "Peace" and a little bit of Glück [happiness].
-Let us understand a word in this difficult time,
-open our hearts, expand the brain.
-
-For "Coffee-Shop" I want to see "Kaffeehaus" written up there,
-or that in an "Auto-Crash" the "Lufttasche" (airbag) goes off,
-and it would be nice, if we called "Bodybuilder" "Muskel-Mäster"
-and if only "Nordisch Geher" would run across the landscape...
-
-"Oh, Lord, please help," because my "Language" causes me "Stress,"
-I long for "Peace" and "a bit of Happiness."
-Help us, so we "understand" in this difficult time,
-"open" our "hearts" and "make" the brain wide.
-
-"Oh, Lord, please" give me my "Language back,"
-I soon here in "crisis, man, it has" no point.
-"Let us" still "a word" understand, "it goes me on the" Geist,*
-and let "Microsoft" soon be known as "Kleinweich" [small soft].
-'''.split('\n')
-
 zip = (arr1, arr2) ->
   basic_zip = (el1, el2) -> [el1, el2]
   zipWith basic_zip, arr1, arr2
@@ -446,13 +379,8 @@ zipWith = (func, arr1, arr2) ->
 
   ret
 
-manualTranslations = {}
-
-for [foreign,english] in zip(foreignText, englishText)
-  manualTranslations[foreign.trim()] = english.trim()
-
-japanesedict = require './japanesedict_v2'
-jdict = new japanesedict.JapaneseDict(fs.readFileSync('edict2_full.txt', 'utf8'))
+japanesedict = require './japanesedict_v3'
+jdict = new japanesedict.JapaneseDict()
 chinesedict = require './chinesedict'
 cdict = new chinesedict.ChineseDict(fs.readFileSync('cedict_full.txt', 'utf8'))
 wiktionarydict = require './wiktionarydict'
@@ -474,14 +402,16 @@ app.get('/getFullTranslation', (req, res) ->
   )
 )
 
+doesWordExist = (word, lang) ->
+  if lang == 'ja'
+    return jdict.doesWordExist(word)
+  return false
+
 stripPunctuation = (word) ->
   punctuation = '!,()_-'
   return (c for c in word when punctuation.indexOf(c) == -1).join('')
 
 everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
-  #if manualTranslations[sentence]?
-  #   callback manualTranslations[sentence]
-  #   return
   await
     getManualTranslation(sentence, lang, 'en', defer(manualtranslation))
     translator.getTranslations(sentence, lang, 'en', defer(translation))
