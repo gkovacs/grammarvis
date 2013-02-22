@@ -214,8 +214,11 @@ everyone.now.getTranslationsForParseHierarchy = getTranslationsForParseHierarchy
   translations = {}
   await
     for subHierarchy in subHierarchies(hierarchy)
+      isTerminal = false
+      if subHierarchy.length == 1 or (typeof subHierarchy == typeof '')
+        isTerminal = true
       currentText = hierarchyToTerminals(subHierarchy, lang)
-      getTranslation(currentText, lang, defer(translations[currentText]))
+      getTranslation(currentText, lang, defer(translations[currentText]), isTerminal)
   callback(translations)
 
 escapeshell = (shellcmd) ->
@@ -414,7 +417,9 @@ stripPunctuation = (word) ->
 getromaji = require './getromaji'
 getpinyin = require './getpinyin'
 
-everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
+everyone.now.getTranslation = getTranslation = (sentence, lang, callback, isTerminal) ->
+  if not isTerminal?
+    isTerminal = true
   romaji = null
   await
     getManualTranslation(sentence, lang, 'en', defer(manualtranslation))
@@ -436,8 +441,9 @@ everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
     englishDef = null
     #romaji = null
     if lang == 'ja'
-      englishDef = jdict.getDefinition(sentence)
-      romaji = jdict.getRomaji(sentence)
+      if isTerminal or jdict.doesWordExist(sentence)
+        englishDef = jdict.getDefinition(sentence, isTerminal)
+        romaji = jdict.getRomaji(sentence)
     if lang == 'zh'
       englishDef = cdict.getEnglishListForWord(sentence).join('; ')
       romaji = cdict.getPinyin(sentence)

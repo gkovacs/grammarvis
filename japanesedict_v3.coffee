@@ -445,8 +445,6 @@ class JapaneseDict
     return false
 
   getRomaji: (word) ->
-    if not @doesWordExist(word)
-      return null
     wordTranslation = jdict.wordSearch(word)
     if wordTranslation? and wordTranslation.data? and wordTranslation.data.length >= 1
       translations = reorderTranslations(word, wordTranslation.data)
@@ -459,8 +457,6 @@ class JapaneseDict
       return toRomaji(wordTranslation.onkun)
 
   getDefinition: (word) ->
-    if not @doesWordExist(word)
-      return null
     wordTranslation = jdict.wordSearch(word)
     if wordTranslation? and wordTranslation.data? and wordTranslation.data.length >= 1
       translations = reorderTranslations(word, wordTranslation.data)
