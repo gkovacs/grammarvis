@@ -419,14 +419,14 @@ everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
   await
     getManualTranslation(sentence, lang, 'en', defer(manualtranslation))
     translator.getTranslations(sentence, lang, 'en', defer(translation))
-    if lang == 'ja'
-      wordDef = jdict.getDefinition(sentence)
-      if wordDef? and wordDef.length > 0
-        getromaji.getRomajiRateLimitedCached(sentence, defer(origText_unused, romaji))
-    if lang == 'zh'
-      wordDef = cdict.getEnglishListForWord(sentence).join('; ')
-      if wordDef? and wordDef.length > 0
-        getpinyin.getPinyinRateLimitedCached(sentence, defer(origText_unused, romaji))
+    #if lang == 'ja'
+    #  wordDef = jdict.getDefinition(sentence)
+    #  if wordDef? and wordDef.length > 0
+    #    getromaji.getRomajiRateLimitedCached(sentence, defer(origText_unused, romaji))
+    #if lang == 'zh'
+    #  wordDef = cdict.getEnglishListForWord(sentence).join('; ')
+    #  if wordDef? and wordDef.length > 0
+    #    getpinyin.getPinyinRateLimitedCached(sentence, defer(origText_unused, romaji))
   do (manualtranslation, translation) ->
     output = []
     #console.log translation
@@ -437,10 +437,10 @@ everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
     #romaji = null
     if lang == 'ja'
       englishDef = jdict.getDefinition(sentence)
-      #romaji = jdict.getRomaji(sentence)
+      romaji = jdict.getRomaji(sentence)
     if lang == 'zh'
       englishDef = cdict.getEnglishListForWord(sentence).join('; ')
-      #romaji = cdict.getPinyin(sentence)
+      romaji = cdict.getPinyin(sentence)
     if dictionaryList[lang]?
       ldict = dictionaryList[lang]
       englishDef = ldict.getEnglishListForWord(sentence).join('; ')

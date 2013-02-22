@@ -445,7 +445,16 @@ class JapaneseDict
     return false
 
   getRomaji: (word) ->
-    return ''
+    wordTranslation = jdict.wordSearch(word)
+    if wordTranslation? and wordTranslation.data? and wordTranslation.data.length >= 1
+      translations = reorderTranslations(word, wordTranslation.data)
+      if translations[0]?
+        kanaFromDef = getKanaFromDef(translations[0])
+        if kanaFromDef?
+          return toRomaji(kanaFromDef)
+    wordTranslation = jdict.kanjiSearch(word)
+    if wordTranslation? and wordTranslation.onkun?
+      return toRomaji(wordTranslation.onkun)
 
   getDefinition: (word) ->
     if not @doesWordExist(word)
