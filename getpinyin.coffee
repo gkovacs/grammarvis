@@ -34,7 +34,7 @@ getPinyinRateLimited = (text, callback) ->
   if lastPinyinFetchTimestamp + 1 >= timestamp
     setTimeout(() ->
       getPinyinRateLimited(text, callback)
-    , 1000)
+    , 250)
   else
     lastPinyinFetchTimestamp = timestamp
     getPinyin(text, callback)

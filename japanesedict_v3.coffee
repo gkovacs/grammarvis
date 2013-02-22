@@ -429,9 +429,9 @@ class JapaneseDict
     console.log 'jdict3 constructed'
 
   doesWordExist: (word) ->
-    wordTranslation = jdict.translate(word)
+    wordTranslation = jdict.wordSearch(word)
     if wordTranslation? and wordTranslation.data? and wordTranslation.data[0]?
-      removeLast = jdict.translate(word[...word.length-1])
+      removeLast = jdict.wordSearch(word[...word.length-1])
       if removeLast? and removeLast.data? and removeLast.data[0]?
         if not und.isEqual(removeLast.data[0], wordTranslation.data[0])
           return true

@@ -34,7 +34,7 @@ getRomajiRateLimited = (text, callback) ->
   if lastRomajiFetchTimestamp + 1 >= timestamp
     setTimeout(() ->
       getRomajiRateLimited(text, callback)
-    , 1000)
+    , 250)
   else
     lastRomajiFetchTimestamp = timestamp
     getRomaji(text, callback)
