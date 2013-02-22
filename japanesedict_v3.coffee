@@ -410,9 +410,11 @@ maxArray = (l) -> Math.max(l...)
 reorderTranslations = (word, allTranslations) ->
   sortable = []
   kanaLengthsForDefs = (getKanaFromDef(defpair).length for defpair in allTranslations)
+  console.log kanaLengthsForDefs
+  console.log word
   longestKana = maxArray(kanaLengthsForDefs)
   for defpair,idx in allTranslations
-    if getKanaFromDef(defpair).length < longestKana
+    if getKanaFromDef(defpair).length < longestKana - 2
       continue
     score = 0
     score += getKanaFromDef.length
@@ -427,7 +429,7 @@ class JapaneseDict
     console.log 'jdict3 constructed'
 
   doesWordExist: (word) ->
-    wordTranslation = jdict.translate(word)
+    wordTranslation = jdict.wordSearch(word)
     if wordTranslation? and wordTranslation.data? and wordTranslation.data.length == 1
       return true
     return false
@@ -440,6 +442,10 @@ class JapaneseDict
     if wordTranslation? and wordTranslation.data? and wordTranslation.data.length >= 1
       translations = reorderTranslations(word, wordTranslation.data)
       translations = translations[...3]
+      return (prettyPrintDefinition(x) for x in translations).join('\n')
+    wordTranslation = jdict.translate(word)
+    if wordTranslation? and wordTranslation.data? and wordTranslation.data.length >= 1
+      translations = wordTranslation.data[...3]
       return (prettyPrintDefinition(x) for x in translations).join('\n')
     return ''
 
