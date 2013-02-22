@@ -405,12 +405,16 @@ getTranslationAnnotationList = (translation) ->
     translation = translation[...translation.indexOf(')/')]
   return translation.split(',')
 
+maxArray = (l) -> Math.max(l...)
+
 reorderTranslations = (word, allTranslations) ->
   sortable = []
+  kanaLengthsForDefs = (getKanaFromDef(defpair).length for defpair in allTranslations)
+  longestKana = maxArray(kanaLengthsForDefs)
   for defpair,idx in allTranslations
+    if getKanaFromDef(defpair).length < longestKana
+      continue
     score = 0
-    if not haveAnnotation(defpair)
-      score += 1
     score += getKanaFromDef.length
     score += idx/10.0
     sortable.push [score, defpair]
