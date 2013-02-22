@@ -378,6 +378,45 @@ kanaMatchesRomajiScore = (romaji, kana) ->
     return rom_matched
   return rom_matched
 
+prettyPrintDefinition = (defpair) ->
+  [definition,defnotes] = defpair
+  if defnotes?
+    return $('<span>').html(defnotes).text() + '\n' + definition
+  else
+    return definition
+
+getKanaFromDef = (defpair) ->
+  definition = defpair[0]
+  definition = definition[...definition.indexOf('/')]
+  if definition.indexOf('[') != -1 and definition.indexOf(']') != -1
+    newKana = definition[definition.indexOf('[')+1...definition.indexOf(']')]
+    return newKana.trim()
+  return definition.trim()
+
+haveAnnotation = (defpair) ->
+  if defpair.length >= 2 and defpair[1]?
+    return true
+  return false
+
+getTranslationAnnotationList = (translation) ->
+  if translation.indexOf('/(') != -1
+    translation = translation[translation.indexOf('/(')+2..]
+  if translation.indexOf(')/') != -1
+    translation = translation[...translation.indexOf(')/')]
+  return translation.split(',')
+
+reorderTranslations = (word, allTranslations) ->
+  sortable = []
+  for defpair,idx in allTranslations
+    score = 0
+    if not haveAnnotation(defpair)
+      score += 1
+    score += getKanaFromDef.length
+    score += idx/10.0
+    sortable.push [score, defpair]
+  sortable.sort()
+  return (x[1] for x in sortable)
+
 class JapaneseDict
 
   constructor: () ->
@@ -393,13 +432,11 @@ class JapaneseDict
     return ''
 
   getDefinition: (word) ->
-    wordTranslation = jdict.translate(word)
-    if wordTranslation? and wordTranslation.data? and wordTranslation.data.length == 1
-      [definition,defnotes] = wordTranslation.data[0]
-      if defnotes?
-        return $('<span>').html(defnotes).text() + '\n' + definition
-      else
-        return definition
+    wordTranslation = jdict.wordSearch(word)
+    if wordTranslation? and wordTranslation.data? and wordTranslation.data.length >= 1
+      translations = reorderTranslations(word, wordTranslation.data)
+      translations = translations[...3]
+      return (prettyPrintDefinition(x) for x in translations).join('\n')
     return ''
 
 root.JapaneseDict = JapaneseDict
