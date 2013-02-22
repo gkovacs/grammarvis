@@ -411,10 +411,18 @@ stripPunctuation = (word) ->
   punctuation = '!,()_-'
   return (c for c in word when punctuation.indexOf(c) == -1).join('')
 
+getromaji = require './getromaji'
+getpinyin = require './getpinyin'
+
 everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
+  romaji = null
   await
     getManualTranslation(sentence, lang, 'en', defer(manualtranslation))
     translator.getTranslations(sentence, lang, 'en', defer(translation))
+    if lang == 'ja'
+      getromaji.getRomajiRateLimitedCached(sentence, defer(origText_unused, romaji))
+    if lang == 'zh'
+      getpinyin.getPinyinRateLimitedCached(sentence, defer(origText_unused, romaji))
   do (manualtranslation, translation) ->
     output = []
     #console.log translation
@@ -422,13 +430,13 @@ everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
     if not translatedText? or translatedText.length < 1
       translatedText = $('<span>').html(translation[0].translatedText).text()
     englishDef = null
-    romaji = null
+    #romaji = null
     if lang == 'ja'
       englishDef = jdict.getDefinition(sentence)
-      romaji = jdict.getRomaji(sentence)
+      #romaji = jdict.getRomaji(sentence)
     if lang == 'zh'
       englishDef = cdict.getEnglishListForWord(sentence).join('; ')
-      romaji = cdict.getPinyin(sentence)
+      #romaji = cdict.getPinyin(sentence)
     if dictionaryList[lang]?
       ldict = dictionaryList[lang]
       englishDef = ldict.getEnglishListForWord(sentence).join('; ')

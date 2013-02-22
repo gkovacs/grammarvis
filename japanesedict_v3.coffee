@@ -5,6 +5,8 @@ fs = require 'fs'
 
 $ = require 'jQuery'
 
+und = require 'underscore'
+
 jmorph = require './japanesemorphology'
 jdict = new jmorph.rcxDict(false)
 
@@ -410,8 +412,6 @@ maxArray = (l) -> Math.max(l...)
 reorderTranslations = (word, allTranslations) ->
   sortable = []
   kanaLengthsForDefs = (getKanaFromDef(defpair).length for defpair in allTranslations)
-  console.log kanaLengthsForDefs
-  console.log word
   longestKana = maxArray(kanaLengthsForDefs)
   for defpair,idx in allTranslations
     if getKanaFromDef(defpair).length < longestKana - 2
@@ -429,8 +429,18 @@ class JapaneseDict
     console.log 'jdict3 constructed'
 
   doesWordExist: (word) ->
-    wordTranslation = jdict.wordSearch(word)
-    if wordTranslation? and wordTranslation.data? and wordTranslation.data.length == 1
+    wordTranslation = jdict.translate(word)
+    if wordTranslation? and wordTranslation.data? and wordTranslation.data[0]?
+      removeLast = jdict.translate(word[...word.length-1])
+      if removeLast? and removeLast.data? and removeLast.data[0]?
+        if not und.isEqual(removeLast.data[0], wordTranslation.data[0])
+          return true
+        else
+          return false
+      else
+        return true
+    wordTranslation = jdict.kanjiSearch(word)
+    if wordTranslation? and wordTranslation.eigo?
       return true
     return false
 
@@ -438,16 +448,20 @@ class JapaneseDict
     return ''
 
   getDefinition: (word) ->
+    if not @doesWordExist(word)
+      return null
     wordTranslation = jdict.wordSearch(word)
     if wordTranslation? and wordTranslation.data? and wordTranslation.data.length >= 1
       translations = reorderTranslations(word, wordTranslation.data)
       translations = translations[...3]
       return (prettyPrintDefinition(x) for x in translations).join('\n')
-    wordTranslation = jdict.translate(word)
-    if wordTranslation? and wordTranslation.data? and wordTranslation.data.length >= 1
-      translations = wordTranslation.data[...3]
-      return (prettyPrintDefinition(x) for x in translations).join('\n')
-    return ''
+    wordTranslation = jdict.kanjiSearch(word)
+    if wordTranslation? and wordTranslation.eigo?
+      return wordTranslation.eigo
+    #if wordTranslation? and wordTranslation.data? and wordTranslation.data.length >= 1
+    #  translations = wordTranslation.data[...3]
+    #  return (prettyPrintDefinition(x) for x in translations).join('\n')
+    return null
 
 root.JapaneseDict = JapaneseDict
 root.kanaMatchesRomajiScore = kanaMatchesRomajiScore
