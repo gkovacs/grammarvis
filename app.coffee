@@ -420,9 +420,13 @@ everyone.now.getTranslation = getTranslation = (sentence, lang, callback) ->
     getManualTranslation(sentence, lang, 'en', defer(manualtranslation))
     translator.getTranslations(sentence, lang, 'en', defer(translation))
     if lang == 'ja'
-      getromaji.getRomajiRateLimitedCached(sentence, defer(origText_unused, romaji))
+      wordDef = jdict.getDefinition(sentence)
+      if wordDef? and wordDef.length > 0
+        getromaji.getRomajiRateLimitedCached(sentence, defer(origText_unused, romaji))
     if lang == 'zh'
-      getpinyin.getPinyinRateLimitedCached(sentence, defer(origText_unused, romaji))
+      wordDef = cdict.getEnglishListForWord(sentence).join('; ')
+      if wordDef? and wordDef.length > 0
+        getpinyin.getPinyinRateLimitedCached(sentence, defer(origText_unused, romaji))
   do (manualtranslation, translation) ->
     output = []
     #console.log translation
