@@ -52,7 +52,7 @@ getTranslationsRateLimited = (fromtext, fromlanguage, tolanguage, callback) ->
   if lastPinyinFetchTimestamp + 1 >= timestamp
     setTimeout(() ->
       getTranslationsRateLimited(fromtext, fromlanguage, tolanguage, callback)
-    , 1000)
+    , 250)
   else
     lastPinyinFetchTimestamp = timestamp
     getTranslationsReal(text, callback)
