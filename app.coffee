@@ -320,6 +320,31 @@ app.get('/getOCR', (req, res) ->
   )
 )
 
+node_static = require 'node-static'
+static_files = new node_static.Server('./synthesize')
+
+app.get '/synthesize', (req, res) ->
+  sentence = req.query.sentence
+  if not sentence?
+    res.end 'need sentence param'
+    return
+  lang = req.query.lang
+  if not lang?
+    res.end 'need lang param'
+    return
+  filepath = './synthesize/' + lang + '/' + sentence + '.mp3'
+  if fs.existsSync(filepath)
+    console.log "serving existing file:" + filepath
+    static_files.serveFile(lang + '/' + sentence + '.mp3', 200, {'Content-type': 'audio/mpeg'}, req, res)
+    return
+  else
+    console.log "downloading new file:" + filepath
+    http_get.get('http://translate.google.com/translate_tts?tl=' + lang + '&q=' + sentence, filepath, (err2, res2) ->
+      console.log "downloaded new file:" + filepath
+      static_files.serveFile(lang + '/' + sentence + '.mp3', 200, {'Content-type': 'audio/mpeg'}, req, res)
+      return
+    )
+
 app.get('/getParseHierarchyAndTranslations', (req, res) ->
   sentence = req.query.sentence.toString()
   lang = req.query.lang.toString()
