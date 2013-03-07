@@ -12,6 +12,8 @@ app = express()
 http = require 'http'
 https = require 'https'
 
+http_get = require 'http-get'
+
 redis = require 'redis'
 rclient = redis.createClient()
 
