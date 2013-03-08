@@ -83,6 +83,8 @@ do ($) ->
     this.append(shortTranslationDiv)
     #this.addClass(text.split(' ').join('-'))
     this.mouseover(() =>
+      #synthesizeSpeech('hola', 'es')
+      synthesizeSpeech(this.attr('foreigntext'), this.attr('foreignlang'))
       #console.log this.attr('hovertext')
       this.css('background-color', 'yellow')
       for x in $('.bordered')
@@ -120,6 +122,14 @@ do ($) ->
       $('#' + rootId).showAsSibling()
     )
     return this
+
+synthesizeSpeech = root.synthesizeSpeech = (sentence, lang) ->
+  audioTag = $('audio')[0]
+  if not audioTag
+    $('body').append($('<audio>'))
+    audioTag = $('audio')[0]
+  audioTag.src = '/synthesize?sentence=' + sentence + '&lang=' + lang
+  audioTag.play()
 
 '''
 ref_hierarchy = [['私', 'の', '猫'], 'が', [['家', 'で'], [ [['五', '匹'], 'の', '鼠'], 'を', '食べた']]]

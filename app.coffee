@@ -106,7 +106,7 @@ everyone.now.getOCR = getOCR = (image, lang, callback) ->
   )
 
 everyone.now.getParse = getParse = (sentence, lang, callback) ->
-  request.get('http://localhost:3555/parse?lang=' + lang + '&sentence=' + sentence, (error, result, data) ->
+  request.get('http://geza.csail.mit.edu:3555/parse?lang=' + lang + '&sentence=' + sentence, (error, result, data) ->
     callback(data)
   )
 
