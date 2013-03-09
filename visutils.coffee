@@ -84,6 +84,7 @@ do ($) ->
     #this.addClass(text.split(' ').join('-'))
     this.mouseover(() =>
       #synthesizeSpeech('hola', 'es')
+      console.log this.attr('foreigntext')
       synthesizeSpeech(this.attr('foreigntext'), this.attr('foreignlang'))
       #console.log this.attr('hovertext')
       this.css('background-color', 'yellow')
@@ -128,7 +129,7 @@ synthesizeSpeech = root.synthesizeSpeech = (sentence, lang) ->
   if not audioTag
     $('body').append($('<audio>'))
     audioTag = $('audio')[0]
-  audioTag.src = '/synthesize?sentence=' + sentence + '&lang=' + lang
+  audioTag.src = 'http://geza.csail.mit.edu:1357/synthesize?sentence=' + sentence + '&lang=' + lang
   audioTag.play()
 
 '''

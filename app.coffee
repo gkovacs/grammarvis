@@ -322,8 +322,11 @@ app.get('/getOCR', (req, res) ->
   )
 )
 
-node_static = require 'node-static'
-static_files = new node_static.Server('./synthesize')
+#node_static = require 'node-static'
+#static_files = new node_static.Server('./synthesize')
+#querystring = require 'querystring'
+#util = require 'util'
+send = require 'send'
 
 app.get '/synthesize', (req, res) ->
   sentence = req.query.sentence
@@ -334,16 +337,30 @@ app.get '/synthesize', (req, res) ->
   if not lang?
     res.end 'need lang param'
     return
-  filepath = './synthesize/' + lang + '/' + sentence + '.mp3'
+  filepath = '/home/geza/grammarvis4/synthesize/' + lang + '/' + sentence + '.mp3'
   if fs.existsSync(filepath)
     console.log "serving existing file:" + filepath
-    static_files.serveFile(lang + '/' + sentence + '.mp3', 200, {'Content-type': 'audio/mpeg'}, req, res)
+    send(req, lang + '/' + sentence + '.mp3').root('./synthesize').pipe(res)
+    #static_files.serveFile(lang + '/' + sentence + '.mp3', 200, {'Content-type': 'audio/mpeg'}, req, res)
+    #res.writeHead(200, {'Content-Type': 'audio/mpeg', 'Content-Length': fs.statSync(filepath)})
+    #readStream = fs.createReadStream(filepath)
+    #util.pump(readStream, res)
     return
   else
-    console.log "downloading new file:" + filepath
-    http_get.get('http://translate.google.com/translate_tts?tl=' + lang + '&q=' + sentence, filepath, (err2, res2) ->
+    #remotefilepath = 'http://translate.google.com/translate_tts?tl=' + lang + '&q=' + sentence
+    remotefilepath = 'http://translate.google.com/translate_tts?tl=' + lang + '&q=' + encodeURIComponent(sentence)
+    console.log "downloading new file:" + remotefilepath
+    http_get_options = {
+      'url': remotefilepath,
+      'headers': {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.32 (KHTML, like Gecko) Chrome/27.0.1425.0 Safari/537.32',
+        'Host': 'translate.google.com',
+      }
+    }
+    http_get.get(http_get_options, filepath, (err2, res2) ->
       console.log "downloaded new file:" + filepath
-      static_files.serveFile(lang + '/' + sentence + '.mp3', 200, {'Content-type': 'audio/mpeg'}, req, res)
+      #static_files.serveFile(lang + '/' + sentence + '.mp3', 200, {'Content-type': 'audio/mpeg'}, req, res)
+      send(req, lang + '/' + sentence + '.mp3').root('./synthesize').pipe(res)
       return
     )
 
