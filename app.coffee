@@ -281,7 +281,7 @@ getParseCached = (sentence, lang, callback) ->
         callback(hierarchy)
       )
     else
-      getParse(sentence, lang,(parse) ->
+      getParse(sentence, lang, (parse) ->
         hierarchy = parseToHierarchy(parse, lang)
         rclient.set(redisKey, JSON.stringify(hierarchy))
         hierarchy = fixHierarchy(hierarchy, lang)
