@@ -282,9 +282,11 @@ getParseCached = (sentence, lang, callback) ->
         callback(hierarchy)
       )
     else
-      console.log 'getting parse:sentence=' + sentence + '; lang='
+      console.log 'getting parse:sentence=' + sentence + '; lang=' + lang
       getParse(sentence, lang, (parse) ->
+        console.log 'have parse:' + parse
         hierarchy = parseToHierarchy(parse, lang)
+        console.log 'have hierarchy:' + JSON.stringify(hierarchy)
         rclient.set(redisKey, JSON.stringify(hierarchy))
         hierarchy = fixHierarchy(hierarchy, lang)
         callback(hierarchy)
