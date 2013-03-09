@@ -268,6 +268,7 @@ getParseCached = (sentence, lang, callback) ->
     rkeylang = 'ja_2'
   redisKey = 'parseHierarchy|' + rkeylang + '|' + sentence
   rclient.get(redisKey, (rerr, rparseres) ->
+    console.log 'rediskey is:' + redisKey
     if rparseres?
       hierarchy = JSON.parse(rparseres)
       hierarchy = fixHierarchy(hierarchy, lang)
