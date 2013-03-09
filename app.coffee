@@ -337,7 +337,7 @@ app.get '/synthesize', (req, res) ->
   if not lang?
     res.end 'need lang param'
     return
-  filepath = '/home/geza/grammarvis4/synthesize/' + lang + '/' + sentence + '.mp3'
+  filepath = './synthesize/' + lang + '/' + sentence + '.mp3'
   if fs.existsSync(filepath)
     console.log "serving existing file:" + filepath
     send(req, lang + '/' + sentence + '.mp3').root('./synthesize').pipe(res)
