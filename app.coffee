@@ -116,7 +116,8 @@ app.get '/getParse', (req, res) ->
   )
 
 everyone.now.getParse = getParse = (sentence, lang, callback) ->
-  request.get('http://geza.csail.mit.edu:3555/parse?lang=' + lang + '&sentence=' + encodeURIComponent(sentence), (error, result, data) ->
+  console.log 'http://geza.csail.mit.edu:3555/parse?lang=' + lang + '&sentence=' + sentence
+  request.get('http://geza.csail.mit.edu:3555/parse?lang=' + lang + '&sentence=' + sentence, (error, result, data) ->
     callback(data)
   )
 
