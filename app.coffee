@@ -106,7 +106,12 @@ everyone.now.getOCR = getOCR = (image, lang, callback) ->
   )
 
 app.get '/getParse', (req, res) ->
+  console.log 'getParse called'
+  console.log req.query.sentence
+  console.log req.query.lang
   getParse(req.query.sentence, req.query.lang, (parsed) ->
+    console.log 'have parse:'
+    console.log parsed
     res.end parsed
   )
 
