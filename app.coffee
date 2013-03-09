@@ -105,6 +105,11 @@ everyone.now.getOCR = getOCR = (image, lang, callback) ->
     callback(body)
   )
 
+app.get '/getParse', (req, res) ->
+  getParse(req.query.sentence, req.query.lang, (parsed) ->
+    res.end parsed
+  )
+
 everyone.now.getParse = getParse = (sentence, lang, callback) ->
   request.get('http://geza.csail.mit.edu:3555/parse?lang=' + lang + '&sentence=' + encodeURIComponent(sentence), (error, result, data) ->
     callback(data)
