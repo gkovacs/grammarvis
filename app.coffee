@@ -1,5 +1,6 @@
 $ = require 'jQuery'
 request = require 'request'
+needle = require 'needle'
 
 exec = require('child_process').exec
 
@@ -315,7 +316,7 @@ getParseHierarchyAndTranslations = everyone.now.getParseHierarchyAndTranslations
   )
 
 getOCRService = (callback) ->
-  request.get('http://transgame.csail.mit.edu:9537/?varname=win7ipaddress', (error, result, body) ->
+  needle.get('http://transgame.csail.mit.edu:9537/?varname=win7ipaddress', (error, result, body) ->
     callback(body)
   )
 
