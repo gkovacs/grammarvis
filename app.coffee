@@ -357,7 +357,7 @@ app.get '/synthesize', (req, res) ->
   if not sentence?
     res.end 'need sentence param'
     return
-  sentence = decodeURIComponent(sentence)
+  sentence = unescape(sentence)
   lang = req.query.lang
   if not lang?
     res.end 'need lang param'
