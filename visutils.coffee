@@ -129,7 +129,7 @@ synthesizeSpeech = root.synthesizeSpeech = (sentence, lang) ->
   if not audioTag
     $('body').append($('<audio>').attr('autoplay', true).attr('loop', true))
     audioTag = $('audio')[0]
-  audioTag.src = 'http://geza.csail.mit.edu:1357/synthesize?sentence=' + sentence + '&lang=' + lang
+  audioTag.src = 'http://geza.csail.mit.edu:1357/synthesize?sentence=' + sentence.trim() + '&lang=' + lang
   audioTag.play()
 
 '''
