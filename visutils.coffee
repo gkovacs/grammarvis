@@ -69,12 +69,13 @@ do ($) ->
     if text.indexOf('/EntL') != -1
       text = text[...text.indexOf('/EntL')]
     idNum = this.attr('id')
-    this.attr('title', text)
-    this.attr('hovertext', text)
     textAsHtml = $('<div>')
     for x in text.split('\n')
       textAsHtml.append($('<span>').text(x)).append('<br>')
-    this.tooltip({track: true, show:false, hide:false, content: textAsHtml.html()})
+    if this.attr('contenthierarchy')? and JSON.parse(this.attr('contenthierarchy'))? and JSON.parse(this.attr('contenthierarchy'))[0]? and (typeof JSON.parse(this.attr('contenthierarchy'))[0]) == (typeof '')
+      this.attr('title', text)
+      this.attr('hovertext', text)
+      this.tooltip({track: true, show:false, hide:false, content: textAsHtml.html()})
     shortTranslation = text
     if shortTranslation.indexOf('\n') != -1
       shortTranslation = shortTranslation[...shortTranslation.indexOf('\n')]
@@ -100,12 +101,13 @@ do ($) ->
           $('#' + sibling).showAsSibling('lightblue')
         currentId = parent
         #console.log currentId
-      if getChildrenOfId(idNum).length == 0
-        this.showAsSibling('yellow')
-      else
-        #console.log idNum
-        for immediateChild in getChildrenOfId(idNum)
-          $('#' + immediateChild).showAsSibling('pink')
+      this.showAsSibling('yellow')
+      #if getChildrenOfId(idNum).length == 0
+      #  this.showAsSibling('yellow')
+      #else
+      #  #console.log idNum
+      #  for immediateChild in getChildrenOfId(idNum)
+      #    $('#' + immediateChild).showAsSibling('pink')
       this.css('background-color', 'yellow')
       return false
     )
