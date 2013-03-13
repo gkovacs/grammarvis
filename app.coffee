@@ -328,7 +328,7 @@ getParseCached = (sentence, lang, callback) ->
   rkeylang = lang
   if rkeylang == 'ja'
     rkeylang = 'ja_2'
-  redisKey = 'parseHierarchy6|' + rkeylang + '|' + sentence
+  redisKey = 'parseHierarchy7|' + rkeylang + '|' + sentence
   rclient.get(redisKey, (rerr, rparseres) ->
     console.log 'rediskey is:' + redisKey
     if rparseres?
