@@ -35,9 +35,16 @@ do ($) ->
       margin = (maxdepth-depth+1)*padding + (maxdepth-depth)
       #padding = (maxdepth-depth+1)*15 + (maxdepth-depth) # this last term to account for the border of 1
     if not color?
-     color = depthToColor(depth)
+      color = depthToColor(depth)
+    posTag = deserializeArray(this.attr('contenthierarchy')).pos
+    if posTag? and posTag in ['N', 'NN']
+      color = 'lightgreen'
+    if posTag? and posTag in ['V', 'VC']
+      color = 'pink'
+    #if posTag? and posTag == 'P'
+    #  color = '#FFAA55'
     this.addClass('bordered').css('position', 'relative').css('padding', padding + 'px').css('font-size', fontSize).attr('color', color).css('background-color', color).css('border-width', 1).css('border-style', 'solid').css('float', 'left').attr('depth', depth).css('border-color', 'black').css('border-radius', '10px').css('margin-top', margin).css('margin-bottom', margin)
-    if this.attr('id').indexOf('_') == -1
+    if this.attr('id') and this.attr('id').indexOf('_') == -1
       this.css('margin-top', $('#H' + this.attr('id')).height() )
     return this
 
@@ -66,13 +73,16 @@ do ($) ->
 
   $.fn.hoverId = () ->
     text = this.attr('translation')
+    #if not text?
+    #  return this
     if text.indexOf('/EntL') != -1
       text = text[...text.indexOf('/EntL')]
     idNum = this.attr('id')
     textAsHtml = $('<div>')
     for x in text.split('\n')
       textAsHtml.append($('<span>').text(x)).append('<br>')
-    if this.attr('contenthierarchy')? and JSON.parse(this.attr('contenthierarchy'))? and JSON.parse(this.attr('contenthierarchy'))[0]? and (typeof JSON.parse(this.attr('contenthierarchy'))[0]) == (typeof '')
+    #if this.attr('contenthierarchy')? and (typeof deserializeArray(this.attr('contenthierarchy'))[0]) == (typeof '')
+    if text.indexOf('\n') != -1
       this.attr('title', text)
       this.attr('hovertext', text)
       this.tooltip({track: true, show:false, hide:false, content: textAsHtml.html()})
@@ -98,7 +108,8 @@ do ($) ->
         parent = currentId.split('_')[...-1].join('_')
         siblings = (x for x in getChildrenOfId(parent) when x != currentId)
         for sibling in siblings
-          $('#' + sibling).showAsSibling('lightblue')
+          $('#' + sibling).showAsSibling()
+        #  $('#' + sibling).showAsSibling('lightblue')
         currentId = parent
         #console.log currentId
       this.showAsSibling('yellow')
@@ -120,7 +131,6 @@ do ($) ->
       rootId = myId
       if myId.indexOf('_') != -1
         rootId = myId[...myId.indexOf('_')]
-      console.log rootId
       this.css('background-color', this.attr('color'))
       $('#' + rootId).showAsSibling()
     )
@@ -215,7 +225,7 @@ hierarchyWithIdToTerminals = (hierarchy, lang) ->
       return children.join(' ')
 
 initializeHover = (basediv) ->
-  contentHierarchy = JSON.parse(basediv.attr('contentHierarchy'))
+  contentHierarchy = deserializeArray(basediv.attr('contentHierarchy'))
   depth = basediv.attr('depth')
   maxdepth = basediv.attr('maxdepth')
   basediv.hoverId()
@@ -235,7 +245,7 @@ initializeHover = (basediv) ->
 makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
   basediv = $('<div>')
   id = subHierarchy.id
-  contentHierarchy = subHierarchy[..]
+  contentHierarchy = subHierarchy #[..]
   basediv.addClass('hovertext').attr('id', id)
   basediv.addClass('hovertext').addClass('textRegion')
   foreignText = hierarchyWithIdToTerminals(subHierarchy, lang)
@@ -246,7 +256,7 @@ makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
   basediv.attr('translation', translation)
   basediv.attr('depth', depth)
   basediv.attr('maxdepth', maxdepth)
-  basediv.attr('contentHierarchy', JSON.stringify(contentHierarchy))
+  basediv.attr('contentHierarchy', serializeArray(contentHierarchy))
   basediv.hoverId()
   do (id) ->
     basediv.click(() ->
@@ -273,23 +283,41 @@ makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
       basediv.borderStuff(depth, maxdepth, 'white')
         #.css('font-size', 10+depth*10)
         .text(contentHierarchy[0]).hoverId()
-    else
-      basediv.borderStuff(depth, maxdepth, 'white')
-        #.css('font-size', 20+depth*10)
-        .text(contentHierarchy[0]).hoverId()
+    #else
+    #  basediv.borderStuff(depth, maxdepth, 'white')
+    #    #.css('font-size', 20+depth*10)
+    #    .text(contentHierarchy[0]).hoverId()
   return basediv
 
 addIdsToHierarchy = (hierarchy, myId='R0') ->
-  if typeof hierarchy == typeof []
+  if typeof hierarchy != typeof ''
     output = []
     for x,i in hierarchy
       console.log x
-      output.push addIdsToHierarchy(x, myId + '_' + i)
+      if typeof x != typeof ''
+        output.push addIdsToHierarchy(x, myId + '_' + i)
+      else
+        output.push x
     output.id = myId
+    if hierarchy.pos?
+      output.pos = hierarchy.pos
+    return output
+  else
+    #output = [hierarchy]
+    #output.id = myId
+    #return output
+    return hierarchy
+
+addFakePOSTags = (hierarchy) ->
+  output = []
+  if typeof hierarchy == typeof []
+    for x,i in hierarchy
+      output.push addFakePOSTags(x)
+    output.pos = 'fakePOS'
     return output
   else
     output = [hierarchy]
-    output.id = myId
+    output.pos = 'fakePOS'
     return output
 
 getUrlParameters = root.getUrlParameters = () ->
@@ -313,6 +341,8 @@ renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget) ->
   idnum = 0
   while $('#R' + idnum).length > 0
     idnum += 1
+  if lang == 'ja'
+    ref_hierarchy = addFakePOSTags(ref_hierarchy)
   ref_hierarchy_with_ids = addIdsToHierarchy(ref_hierarchy, 'R' + idnum)
   console.log ref_hierarchy_with_ids
   rootBaseDiv = makeDivs(ref_hierarchy_with_ids, lang, translations, getMaxDepth(ref_hierarchy_with_ids) - 1)
@@ -404,6 +434,38 @@ initializePopup = root.initializePopup = () ->
       )
   }).css('max-height', '500px')
 
+arrayToObj = (arr) ->
+  if (typeof arr != typeof []) and (typeof arr != typeof {})
+    return arr
+  obj = {}
+  for k of arr
+    v = arr[k]
+    if (typeof v == typeof []) or (typeof v == typeof {})
+      v = arrayToObj(v)
+    obj[k] = v
+  return obj
+
+objToArray = (obj) ->
+  if typeof obj != typeof {}
+    return obj
+  arr = []
+  for k of obj
+    v = obj[k]
+    if typeof v == typeof {}
+      v = objToArray(v)
+    if not isNaN(k)
+      k = parseInt(k)
+    arr[k] = v
+  return arr
+
+serializeArray = root.serializeArray = (arr) ->
+  serializable = arrayToObj(arr)
+  return JSON.stringify(serializable)
+
+deserializeArray = root.deserializeArray = (s) ->
+  obj = JSON.parse(s)
+  return objToArray(obj)
+
 addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting=false) ->
   if not lang? and not renderTarget?
     lang = getUrlParameters()['lang'] ? 'en'
@@ -413,7 +475,7 @@ addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting
   parseHierarchyAndTranslationsForLang = (sentence, callback) ->
     #now.getParseHierarchyAndTranslations(sentence, lang, (ref_hierarchy,translations) -> callback(null, [ref_hierarchy,translations]))
     $.get(root.serverLocation + '/getParseHierarchyAndTranslations?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang), (resultData, resultStatus) ->
-      resultData = JSON.parse(resultData)
+      resultData = deserializeArray(resultData)
       currentPair = [resultData.hierarchy, resultData.translations]
       #console.log currentPair
       callback(null, currentPair)

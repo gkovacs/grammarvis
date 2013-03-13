@@ -190,14 +190,64 @@ makeConstituents = (sentence, textConstituents) ->
     nconstituents[textToIndex(sentence, key).join(',')] = (textToIndex(sentence, x) for x in val)
   return nconstituents
 
+getPOSTag = (s) ->
+  if s[0] == '('
+    s = s[1..]
+  if s.indexOf(' ') != -1
+    s = s[...s.indexOf(' ')]
+  return s
+
+arrayToObj = (arr) ->
+  if (typeof arr != typeof []) and (typeof arr != typeof {})
+    return arr
+  obj = {}
+  for k of arr
+    v = arr[k]
+    if (typeof v == typeof []) or (typeof v == typeof {})
+      v = arrayToObj(v)
+    obj[k] = v
+  return obj
+
+objToArray = (obj) ->
+  if typeof obj != typeof {}
+    return obj
+  arr = []
+  for k of obj
+    v = obj[k]
+    if typeof v == typeof {}
+      v = objToArray(v)
+    if not isNaN(k)
+      k = parseInt(k)
+    arr[k] = v
+  return arr
+
+serializeArray = (arr) ->
+  serializable = arrayToObj(arr)
+  return JSON.stringify(serializable)
+
+deserializeArray = (s) ->
+  obj = JSON.parse(s)
+  return objToArray(obj)
+
 parseToHierarchy = (parse, lang) ->
   output = []
+  postags = []
   for children in getChildren(parse)
+    postags.push getPOSTag(children)
     output.push parseToHierarchy(children, lang)
   if output.length == 1
-    return output[0]
+    tout = output[0]
+    if typeof tout == typeof ''
+      tout = [tout]
+    tout.pos = postags[0]
+    return tout
   if output.length == 0
-    return terminals(parse, lang)
+    tout = terminals(parse, lang)
+    if typeof tout == typeof ''
+      tout = [tout]
+    tout.pos = getPOSTag(parse)
+    return tout
+  output.pos = getPOSTag(parse)
   currentText = terminals(parse, lang)
   #if lang == 'ja' and doesWordExist(word, lang)
   #  return currentText
@@ -271,25 +321,25 @@ app.get '/getParseCached', (req, res) ->
   console.log req.query.sentence
   console.log req.query.lang
   getParseCached(req.query.sentence, req.query.lang, (hierarchy) ->
-    res.end JSON.stringify(hierarchy)
+    res.end serializeArray(hierarchy)
   )
 
 getParseCached = (sentence, lang, callback) ->
   rkeylang = lang
   if rkeylang == 'ja'
     rkeylang = 'ja_2'
-  redisKey = 'parseHierarchy|' + rkeylang + '|' + sentence
+  redisKey = 'parseHierarchy6|' + rkeylang + '|' + sentence
   rclient.get(redisKey, (rerr, rparseres) ->
     console.log 'rediskey is:' + redisKey
     if rparseres?
-      hierarchy = JSON.parse(rparseres)
+      hierarchy = deserializeArray(rparseres)
       hierarchy = fixHierarchy(hierarchy, lang)
       callback(hierarchy)
       return
     if lang == 'ja'
       exec('./japanese-parse.py ' + escapeshell(sentence.split('\n').join(' ').split(' ').join('')), (error, stdout, stderr) ->
-        hierarchy = JSON.parse(stdout)
-        rclient.set(redisKey, JSON.stringify(hierarchy))
+        hierarchy = deserializeArray(stdout)
+        rclient.set(redisKey, serializeArray(hierarchy))
         hierarchy = fixHierarchy(hierarchy, lang)
         callback(hierarchy)
       )
@@ -298,8 +348,8 @@ getParseCached = (sentence, lang, callback) ->
       getParse(sentence, lang, (parse) ->
         console.log 'have parse:' + parse
         hierarchy = parseToHierarchy(parse, lang)
-        console.log 'have hierarchy:' + JSON.stringify(hierarchy)
-        rclient.set(redisKey, JSON.stringify(hierarchy))
+        console.log 'have hierarchy:' + serializeArray(hierarchy)
+        rclient.set(redisKey, serializeArray(hierarchy))
         hierarchy = fixHierarchy(hierarchy, lang)
         callback(hierarchy)
       )
@@ -393,7 +443,7 @@ app.get('/getParseHierarchyAndTranslations', (req, res) ->
   sentence = req.query.sentence.toString()
   lang = req.query.lang.toString()
   getParseHierarchyAndTranslations(sentence, lang, (hierarchy, translations) ->
-    res.end(JSON.stringify({'hierarchy': hierarchy, 'translations': translations}))
+    res.end(serializeArray({'hierarchy': hierarchy, 'translations': translations}))
   )
 )
 
