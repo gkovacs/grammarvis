@@ -356,8 +356,8 @@ renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget) ->
     rootBaseDiv.css('margin-top', currentTopMargin + $('#HR' + idnum).height())
   , 10)
 
-addSentence = root.addSentence = (sentence, lang, renderTarget, clearExisting=false) ->
-  addSentences([sentence], lang, renderTarget, clearExisting)
+addSentence = root.addSentence = (sentence, lang, renderTarget, clearExisting=false, callback) ->
+  addSentences([sentence], lang, renderTarget, clearExisting, callback)
 
 if not root.serverLocation?
   root.serverLocation = ''
@@ -468,7 +468,7 @@ deserializeArray = root.deserializeArray = (s) ->
   obj = JSON.parse(s)
   return objToArray(obj)
 
-addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting=false) ->
+addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting=false, doneCallback) ->
   if not lang? and not renderTarget?
     lang = getUrlParameters()['lang'] ? 'en'
     renderTarget = $('#sentenceDisplay')
@@ -489,6 +489,8 @@ addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting
       sentence = sentences[i]
       [ref_hierarchy,translations] = results[i]
       renderSentence(sentence, ref_hierarchy, translations, lang, renderTarget)
+    if doneCallback?
+      doneCallback()
   )
 
 console.log 'visutils loaded'
