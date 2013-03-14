@@ -123,6 +123,8 @@ do ($) ->
       return false
     )
     this.mouseleave(() =>
+      if $('audio')[0]?
+        $('audio')[0].pause()
       for x in $('.hovered')
         $(x).css('background-color', $(x).attr('color'))
       $('.hovered').removeClass('hovered')
