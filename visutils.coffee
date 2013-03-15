@@ -138,12 +138,16 @@ do ($) ->
     )
     return this
 
-synthesizeSpeech = root.synthesizeSpeech = (sentence, lang) ->
+synthesizeSpeech = root.synthesizeSpeech = (sentence, lang, isloop) ->
   audioTag = $('audio')[0]
   if not audioTag
-    $('body').append($('<audio>').attr('autoplay', true).attr('loop', true))
+    $('body').append($('<audio>').attr('autoplay', true).attr('loop', isloop))
     audioTag = $('audio')[0]
-  audioTag.src = 'http://geza.csail.mit.edu:1357/synthesize?sentence=' + sentence.trim() + '&lang=' + lang
+  audioTag.src = 'http://geza.csail.mit.edu:1357/synthesize?sentence=' + sentence + '&lang=' + lang
+  if isloop or not isloop?
+    $('audio').attr('loop', false)
+  else
+    $('audio').attr('loop', true)
   audioTag.play()
 
 '''
