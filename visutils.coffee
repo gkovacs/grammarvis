@@ -73,8 +73,8 @@ do ($) ->
 
   $.fn.hoverId = () ->
     text = this.attr('translation')
-    #if not text?
-    #  return this
+    if not text?
+      return this
     if text.indexOf('/EntL') != -1
       text = text[...text.indexOf('/EntL')]
     idNum = this.attr('id')
@@ -377,7 +377,8 @@ submitTranslation = root.submitTranslation = (origPhrase, translation, lang) ->
     'translation': translation,
   }
   console.log root.serverLocation + '/submitTranslation?' + $.param(reqParams)
-  $.get(root.serverLocation + '/submitTranslation?' + $.param(reqParams))
+  if not root.isMTurk?
+    $.get(root.serverLocation + '/submitTranslation?' + $.param(reqParams))
 
 updateTranslation = (id, translation) ->
   console.log 'updateTranslation for:' + id
@@ -480,12 +481,17 @@ addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting
     renderTarget = $('#sentenceDisplay')
   parseHierarchyAndTranslationsForLang = (sentence, callback) ->
     #now.getParseHierarchyAndTranslations(sentence, lang, (ref_hierarchy,translations) -> callback(null, [ref_hierarchy,translations]))
-    $.get(root.serverLocation + '/getParseHierarchyAndTranslations?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang), (resultData, resultStatus) ->
-      resultData = deserializeArray(resultData)
+    if not root.isMTurk?
+      $.get(root.serverLocation + '/getParseHierarchyAndTranslations?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang), (resultData, resultStatus) ->
+        resultData = deserializeArray(resultData)
+        currentPair = [resultData.hierarchy, resultData.translations]
+        #console.log currentPair
+        callback(null, currentPair)
+      )
+    else
+      resultData = deserializeArray(root.cachedParseHierarchyAndTranslations[lang][sentence])
       currentPair = [resultData.hierarchy, resultData.translations]
-      #console.log currentPair
       callback(null, currentPair)
-    )
   async.mapSeries(sentences, parseHierarchyAndTranslationsForLang, (err, results) ->
     if clearExisting
       renderTarget.html('')

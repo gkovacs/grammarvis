@@ -3,6 +3,7 @@ request = require 'request'
 needle = require 'needle'
 
 exec = require('child_process').exec
+spawn = require('child_process').spawn
 
 #translator = require './translator'
 translator = require './googletranslate'
@@ -324,10 +325,36 @@ app.get '/getParseCached', (req, res) ->
     res.end serializeArray(hierarchy)
   )
 
+segmentSentences = (text, lang, callback) ->
+  if lang == 'de'
+    sentences = []
+    sentenceSeg = spawn('./opennlp/bin/opennlp', ['SentenceDetector', 'opennlp/de-sent.bin'])
+    sentenceSeg.stdout.on('data', (data) ->
+      data = data.toString()
+      if data.trim() == ''
+        callback(sentences)
+      else
+        for sentence in data.split('\n')
+          sentences.push sentence
+    )
+    #sentenceSeg.on('close', (code) ->
+    #  callback(sentences)
+    #)
+    sentenceSeg.stdin.write(text + '\n\n')
+
+app.get '/segmentSentences', (req, res) ->
+  text = req.query.text
+  lang = req.query.lang ? 'de'
+  segmentSentences(text, lang, (sentences) ->
+    res.end JSON.stringify(sentences)
+  )
+
 getParseCached = (sentence, lang, callback) ->
   rkeylang = lang
   if rkeylang == 'ja'
     rkeylang = 'ja_2'
+  if rkeylang == 'ko'
+    rkeylang = 'ko_5'
   redisKey = 'parseHierarchy7|' + rkeylang + '|' + sentence
   rclient.get(redisKey, (rerr, rparseres) ->
     console.log 'rediskey is:' + redisKey
@@ -339,6 +366,13 @@ getParseCached = (sentence, lang, callback) ->
     if lang == 'ja'
       exec('./japanese-parse.py ' + escapeshell(sentence.split('\n').join(' ').split(' ').join('')), (error, stdout, stderr) ->
         hierarchy = deserializeArray(stdout)
+        rclient.set(redisKey, serializeArray(hierarchy))
+        hierarchy = fixHierarchy(hierarchy, lang)
+        callback(hierarchy)
+      )
+    else if lang == 'ko'
+      exec('java -jar BerkeleyParser_KorV2.jar "' + (sentence.split('\n').join(' ').split('"').join(' ') + '"'), (error, stdout, stderr) ->
+        hierarchy = parseToHierarchy(stdout.trim(), lang)
         rclient.set(redisKey, serializeArray(hierarchy))
         hierarchy = fixHierarchy(hierarchy, lang)
         callback(hierarchy)
@@ -571,6 +605,9 @@ everyone.now.getTranslation = getTranslation = (sentence, lang, callback, isTerm
       englishDef = ldict.getEnglishListForWord(sentence).join('; ')
       if englishDef.length == 0
         englishDef = ldict.getEnglishListForWord(stripPunctuation(sentence)).join('; ')
+      lowerCaseDefinitions = ldict.getEnglishListForWord(sentence.toLowerCase()).join('; ')
+      if lowerCaseDefinitions != englishDef
+        englishDef = englishDef + '\n' + lowerCaseDefinitions
     if manualtranslation?
       output.push manualtranslation
       if romaji?
