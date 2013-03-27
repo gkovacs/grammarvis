@@ -555,6 +555,7 @@
       } else {
         callbackParseHierarchy = root.callbackParseHierarchy = function(resultData) {
           var currentPair;
+          console.log(resultData);
           resultData = objToArray(resultData);
           currentPair = [resultData.hierarchy, resultData.translations];
           return callback(null, currentPair);

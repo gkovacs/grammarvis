@@ -498,6 +498,7 @@ addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting
       )
     else
       callbackParseHierarchy = root.callbackParseHierarchy = (resultData) ->
+        console.log resultData
         resultData = objToArray(resultData)
         currentPair = [resultData.hierarchy, resultData.translations]
         callback(null, currentPair)
