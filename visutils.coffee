@@ -267,6 +267,8 @@ makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
   basediv.attr('contentHierarchy', serializeArray(contentHierarchy))
   basediv.hoverId()
   do (id) ->
+    if root.isMTurk?
+      return
     basediv.click(() ->
       lForeignText = $('#' + id).attr('foreignText')
       lTranslation = $('#' + id).attr('translation')

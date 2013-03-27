@@ -295,6 +295,7 @@
     basediv.attr('contentHierarchy', serializeArray(contentHierarchy));
     basediv.hoverId();
     (function(id) {
+      if (root.isMTurk != null) return;
       return basediv.click(function() {
         var lForeignText, lTranslation, shortTranslation;
         lForeignText = $('#' + id).attr('foreignText');
