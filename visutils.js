@@ -545,8 +545,13 @@
     }
     if (!(renderTarget != null)) renderTarget = $('#sentenceDisplay');
     parseHierarchyAndTranslationsForLang = function(sentence, callback) {
+      var basePath;
       if (!(root.isMTurk != null)) {
-        return $.get(root.serverLocation + '/getParseHierarchyAndTranslations?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang), function(resultData, resultStatus) {
+        basePath = '/getParseHierarchyAndTranslations';
+        if (root.serverLocation.indexOf('heroku') !== -1) {
+          basePath = '/getParseHierarchyAndTranslations.php';
+        }
+        return $.get(root.serverLocation + basePath + '?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang), function(resultData, resultStatus) {
           var currentPair;
           resultData = deserializeArray(resultData);
           currentPair = [resultData.hierarchy, resultData.translations];
@@ -560,7 +565,11 @@
           currentPair = [resultData.hierarchy, resultData.translations];
           return callback(null, currentPair);
         };
-        return insertScript(root.serverLocation + '/getParseHierarchyAndTranslations?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang) + '&callback=callbackParseHierarchy');
+        basePath = '/getParseHierarchyAndTranslations';
+        if (root.serverLocation.indexOf('heroku') !== -1) {
+          basePath = '/getParseHierarchyAndTranslations.php';
+        }
+        return insertScript(root.serverLocation + basePath + '?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang) + '&callback=callbackParseHierarchy');
       }
     };
     return async.mapSeries(sentences, parseHierarchyAndTranslationsForLang, function(err, results) {

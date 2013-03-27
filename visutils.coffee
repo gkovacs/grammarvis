@@ -490,7 +490,10 @@ addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting
   parseHierarchyAndTranslationsForLang = (sentence, callback) ->
     #now.getParseHierarchyAndTranslations(sentence, lang, (ref_hierarchy,translations) -> callback(null, [ref_hierarchy,translations]))
     if not root.isMTurk?
-      $.get(root.serverLocation + '/getParseHierarchyAndTranslations?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang), (resultData, resultStatus) ->
+      basePath = '/getParseHierarchyAndTranslations'
+      if root.serverLocation.indexOf('heroku') != -1
+        basePath = '/getParseHierarchyAndTranslations.php'
+      $.get(root.serverLocation + basePath + '?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang), (resultData, resultStatus) ->
         resultData = deserializeArray(resultData)
         currentPair = [resultData.hierarchy, resultData.translations]
         #console.log currentPair
@@ -502,7 +505,10 @@ addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting
         resultData = objToArray(resultData)
         currentPair = [resultData.hierarchy, resultData.translations]
         callback(null, currentPair)
-      insertScript(root.serverLocation + '/getParseHierarchyAndTranslations?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang) + '&callback=callbackParseHierarchy')
+      basePath = '/getParseHierarchyAndTranslations'
+      if root.serverLocation.indexOf('heroku') != -1
+        basePath = '/getParseHierarchyAndTranslations.php'
+      insertScript(root.serverLocation + basePath + '?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang) + '&callback=callbackParseHierarchy')
   async.mapSeries(sentences, parseHierarchyAndTranslationsForLang, (err, results) ->
     if clearExisting
       renderTarget.html('')
