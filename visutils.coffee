@@ -475,7 +475,7 @@ deserializeArray = root.deserializeArray = (s) ->
   obj = JSON.parse(s)
   return objToArray(obj)
 
-callbackParseHierarchy = root.callbackParseHierarchy = null
+callbackParseHierarchy = root.callbackParseHierarchy = []
 
 insertScript = root.insertScript = (url) ->
   scriptTag = document.createElement('script')
@@ -502,7 +502,8 @@ addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting
         callback(null, currentPair)
       )
     else
-      callbackParseHierarchy = root.callbackParseHierarchy = (resultData) ->
+      callNum = callbackParseHierarchy.length
+      callbackParseHierarchy.push (resultData) ->
         console.log resultData
         resultData = objToArray(resultData)
         currentPair = [resultData.hierarchy, resultData.translations]
@@ -510,7 +511,7 @@ addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting
       basePath = '/getParseHierarchyAndTranslations'
       if root.serverLocation.indexOf('heroku') != -1
         basePath = '/getParseHierarchyAndTranslations.php'
-      insertScript(root.serverLocation + basePath + '?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang) + '&callback=callbackParseHierarchy')
+      insertScript(root.serverLocation + basePath + '?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang) + '&callback=callbackParseHierarchy[' + callNum + ']')
   async.mapSeries(sentences, parseHierarchyAndTranslationsForLang, (err, results) ->
     if clearExisting
       renderTarget.html('')
