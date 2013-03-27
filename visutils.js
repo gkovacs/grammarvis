@@ -161,6 +161,7 @@
 
   synthesizeSpeech = root.synthesizeSpeech = function(sentence, lang, isloop) {
     var audioTag;
+    if (root.isMTurk != null) return;
     audioTag = $('audio')[0];
     if (!audioTag) {
       $('body').append($('<audio>').attr('autoplay', true).attr('loop', isloop));

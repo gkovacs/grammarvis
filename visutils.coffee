@@ -139,6 +139,8 @@ do ($) ->
     return this
 
 synthesizeSpeech = root.synthesizeSpeech = (sentence, lang, isloop) ->
+  if root.isMTurk?
+    return
   audioTag = $('audio')[0]
   if not audioTag
     $('body').append($('<audio>').attr('autoplay', true).attr('loop', isloop))
