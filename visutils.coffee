@@ -473,6 +473,14 @@ deserializeArray = root.deserializeArray = (s) ->
   obj = JSON.parse(s)
   return objToArray(obj)
 
+callbackParseHierarchy = root.callbackParseHierarchy = null
+
+insertScript = root.insertScript = (url) ->
+  scriptTag = document.createElement('script')
+  scriptTag.type = 'text/javascript'
+  scriptTag.src = url
+  document.documentElement.appendChild(scriptTag)
+
 addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting=false, doneCallback) ->
   if not lang? and not renderTarget?
     lang = getUrlParameters()['lang'] ? 'en'
@@ -489,9 +497,11 @@ addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting
         callback(null, currentPair)
       )
     else
-      resultData = deserializeArray(root.cachedParseHierarchyAndTranslations[lang][sentence])
-      currentPair = [resultData.hierarchy, resultData.translations]
-      callback(null, currentPair)
+      callbackParseHierarchy = root.callbackParseHierarchy = (resultData) ->
+        resultData = objToArray(resultData)
+        currentPair = [resultData.hierarchy, resultData.translations]
+        callback(null, currentPair)
+      insertScript(root.serverLocation + '/getParseHierarchyAndTranslations?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang) + '&callback=callbackParseHierarchy')
   async.mapSeries(sentences, parseHierarchyAndTranslationsForLang, (err, results) ->
     if clearExisting
       renderTarget.html('')

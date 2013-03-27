@@ -476,8 +476,15 @@ app.get '/synthesize', (req, res) ->
 app.get('/getParseHierarchyAndTranslations', (req, res) ->
   sentence = req.query.sentence.toString()
   lang = req.query.lang.toString()
+  callbackName = req.query.callback
   getParseHierarchyAndTranslations(sentence, lang, (hierarchy, translations) ->
-    res.end(serializeArray({'hierarchy': hierarchy, 'translations': translations}))
+    jsonOutput = serializeArray({'hierarchy': hierarchy, 'translations': translations})
+    if not callbackName?
+      #res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(jsonOutput)
+    else
+      res.writeHead(200, { 'Content-Type': 'application/javascript' })
+      res.end(callbackName + '(' + jsonOutput + ')')
   )
 )
 
