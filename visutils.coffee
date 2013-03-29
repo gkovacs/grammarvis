@@ -250,13 +250,16 @@ initializeHover = (basediv) ->
         #.css('font-size', 20+depth*10)
         .text(contentHierarchy[0]).hoverId()
 
-#terminalElements = (contentHierarchy) ->
-#  output = []
-#  agenda = [contentHierarchy]
-#  while agenda.length > 0
-#    currentElem = a.shift()
+terminalElements = (contentHierarchy) ->
+  output = []
+  if typeof contentHierarchy[0] == typeof ''
+    return [contentHierarchy]
+  for child in contentHierarchy
+    for terminalElement in terminalElements(child)
+      output.push terminalElement
+  return output
 
-makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
+makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1, hideStructure=false) ->
   basediv = $('<div>')
   id = subHierarchy.id
   contentHierarchy = subHierarchy #[..]
@@ -292,11 +295,12 @@ makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
   initializeHover(basediv)
   if contentHierarchy.length > 1
     basediv.borderStuff(depth, maxdepth)
-    for child in contentHierarchy
-      basediv.append makeDivs(child, lang, translations, maxdepth, depth+1)
-    #else
-    #  for child in terminalElements(contentHierarchy)
-    #    basediv.append makeDivs(child, lang, translations, maxdepth, depth+1, terminalsOnly)
+    if not hideStructure
+      for child in contentHierarchy
+        basediv.append makeDivs(child, lang, translations, maxdepth, depth+1, hideStructure)
+    else
+      for child in terminalElements(contentHierarchy)
+        basediv.append makeDivs(child, lang, translations, maxdepth, depth+1, hideStructure)
   else if contentHierarchy.length == 1
     if typeof contentHierarchy[0] == typeof ''
       basediv.borderStuff(depth, maxdepth, 'white')
@@ -354,7 +358,7 @@ callOnceElementAvailable = (element, callback) ->
       callOnceElementAvailable(element, callback)
     , 10)
 
-renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget) ->
+renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget, hideStructure=false) ->
   console.log ref_hierarchy
   console.log translations
   idnum = 0
@@ -364,7 +368,10 @@ renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget) ->
     ref_hierarchy = addFakePOSTags(ref_hierarchy)
   ref_hierarchy_with_ids = addIdsToHierarchy(ref_hierarchy, 'R' + idnum)
   console.log ref_hierarchy_with_ids
-  rootBaseDiv = makeDivs(ref_hierarchy_with_ids, lang, translations, getMaxDepth(ref_hierarchy_with_ids) - 1)
+  maxdepth = getMaxDepth(ref_hierarchy_with_ids) - 1
+  if hideStructure
+    maxdepth = 1
+  rootBaseDiv = makeDivs(ref_hierarchy_with_ids, lang, translations, maxdepth, 1, hideStructure)
   renderTarget.append(rootBaseDiv).append('<br>')
   rootBaseDiv.showAsSibling()
   #currentTopMargin = parseInt(rootBaseDiv.css('margin-top').split('px').join(''))
@@ -373,8 +380,8 @@ renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget) ->
     rootBaseDiv.css('margin-top', currentTopMargin + $('#HR' + idnum).height())
   , 10)
 
-addSentence = root.addSentence = (sentence, lang, renderTarget, clearExisting=false, callback) ->
-  addSentences([sentence], lang, renderTarget, clearExisting, callback)
+addSentence = root.addSentence = (sentence, lang, renderTarget, options={}, callback) ->
+  addSentences([sentence], lang, renderTarget, options, callback)
 
 if not root.serverLocation?
   root.serverLocation = ''
@@ -523,7 +530,13 @@ getParseHierarchyAndTranslationsForLang = (sentence, lang, callback) ->
       basePath = '/getParseHierarchyAndTranslations.php'
     insertScript(root.serverLocation + basePath + '?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang) + '&callback=callbackParseHierarchy[' + callNum + ']')
 
-addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting=false, doneCallback) ->
+addSentences = root.addSentences = (sentences, lang, renderTarget, options, doneCallback=null) ->
+  hideStructure = false
+  if options? and options.hideStructure? and options.hideStructure
+    hideStructure = true
+  clearExisting = false
+  if options? and options.clearExisting? and options.clearExisting
+    clearExisting = true
   if not lang? and not renderTarget?
     lang = getUrlParameters()['lang'] ? 'en'
     renderTarget = $('#sentenceDisplay')
@@ -537,7 +550,7 @@ addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting
     for i in [0...results.length]
       sentence = sentences[i]
       [ref_hierarchy,translations] = results[i]
-      renderSentence(sentence, ref_hierarchy, translations, lang, renderTarget)
+      renderSentence(sentence, ref_hierarchy, translations, lang, renderTarget, hideStructure)
     if doneCallback?
       doneCallback()
   )
