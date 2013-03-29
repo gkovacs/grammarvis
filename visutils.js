@@ -19,7 +19,7 @@
       })()).join('');
     };
     $.fn.borderStuff = function(depth, maxdepth, color) {
-      var fontSize, lang, margin, padding, posTag, width;
+      var fontSize, lang, margin, padding, width;
       width = 3;
       /*
           depth = $(this).parents().attr('depth')
@@ -39,11 +39,6 @@
         margin = (maxdepth - depth + 1) * padding + (maxdepth - depth);
       }
       if (!(color != null)) color = depthToColor(depth);
-      posTag = deserializeArray(this.attr('contenthierarchy')).pos;
-      if ((posTag != null) && (posTag === 'N' || posTag === 'NN')) {
-        color = 'lightgreen';
-      }
-      if ((posTag != null) && (posTag === 'V' || posTag === 'VC')) color = 'pink';
       this.addClass('bordered').css('position', 'relative').css('padding', padding + 'px').css('font-size', fontSize).attr('color', color).css('background-color', color).css('border-width', 1).css('border-style', 'solid').css('float', 'left').attr('depth', depth).css('border-color', 'black').css('border-radius', '10px').css('margin-top', margin).css('margin-bottom', margin);
       if (this.attr('id') && this.attr('id').indexOf('_') === -1) {
         this.css('margin-top', $('#H' + this.attr('id')).height());

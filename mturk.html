@@ -1,0 +1,99 @@
+<link rel="stylesheet" type="text/css" href="//grammarvis.herokuapp.com/jquery-ui-1.10.0.custom.min.css">
+<script src="//grammarvis.herokuapp.com/jquery-1.9.0.js"></script>
+<script src="//grammarvis.herokuapp.com/jquery-ui-1.10.0.custom.min.js"></script>
+<script src="//grammarvis.herokuapp.com/async.js"></script>
+<script src="//grammarvis.herokuapp.com/visutils.js"></script>
+<script>
+root = window
+
+function addSentenceTranslateOnly(sentence, lang, target) {
+  getTranslationForLang(sentence, lang, function(results) {
+    target.append($('<div>').text(sentence))
+    target.append($('<div>').text(results))
+  })
+}
+
+$(document).ready(function () {
+  $('#accordion').accordion({'heightStyle': 'content', 'collapsible': true, 'active': false})
+  $('#submitButton').attr('onclick', 'return validateForm()')
+  root.serverLocation = '//grammarvis.herokuapp.com';
+  root.isMTurk = true;
+  addSentence('我哥哥是美国人。', 'zh', $('#exwordlevel'), {'clearExisting': true, 'hideStructure': true});
+  addSentence('我哥哥是美国人。', 'zh', $('#exstructural'), {'clearExisting': true, 'hideStructure': false});
+  addSentence('${sentence1}', 'zh', $('#sentence1'), {'clearExisting': true, 'hideStructure': true});
+  //addSentence('${sentence2}', 'zh', $('#sentence2'), {'clearExisting': true});
+  addSentenceTranslateOnly('${sentence2}', 'zh', $('#sentence2'));
+  addSentence('${sentence3}', 'zh', $('#sentence3'), {'clearExisting': true});
+})
+
+function validateForm() {
+  return true;
+}
+</script>
+<style>
+.clearFloatBreak {
+  width: 100%;
+  height: 1px;
+  margin: 0 0 -1px;
+  clear: both;
+}
+</style>
+<h3>Fix Machine-translation Errors</h3>
+<p>You will be shown 3 sentences in a foreign language. Each sentence be shown along with a (possibly incorrect) machine-generated translation to English. Correct the English translation, and enter it into the textbox. Note that you do NOT need to know the foreign language to do this task (we are just trying to see how well you understand the machine-generated translation).</p>
+
+<p>The 3 different sentences will each be shown in a different way. One sentence will be shown with the original (foreign-language) sentence, followed by the machine translation, as shown below:</p>
+
+<p>我哥哥是美国人。</p>
+<p>My brother is American.</p>
+
+<br/>
+
+<p>Another sentence will show the machine translation for the sentence, and translations for the individual words if you hover over them, as shown below:</p>
+
+<div id="exwordlevel"></div>
+<div class="clearFloatBreak"></div>
+
+<br/>
+
+<p>Another sentence will show the machine translation for the sentence, and translations for any of the constituent phrases if you hover over their outlines, as shown below:</p>
+
+<div id="exstructural"></div>
+<div class="clearFloatBreak"></div>
+
+<div id="accordion">
+
+<h3>Sentence 1</h3>
+<div>
+<br/><br/>
+<div id="sentence1"></div>
+<div class="clearFloatBreak"></div>
+<p>Your corrected English translation for Sentence 1:</p>
+<textarea id="translation1" name="translation1" cols="80" rows="3"></textarea>
+</div>
+
+<h3>Sentence 2</h3>
+<div>
+<br/><br/>
+<div id="sentence2"></div>
+<div class="clearFloatBreak"></div>
+<p>Your corrected English translation for Sentence 2:</p>
+<textarea id="translation2" name="translation2" cols="80" rows="3"></textarea>
+</div>
+
+<h3>Sentence 3</h3>
+<div>
+<br/><br/>
+<div id="sentence3"></div>
+<div class="clearFloatBreak"></div>
+<p>Your corrected English translation for Sentence 3:</p>
+<textarea id="translation3" name="translation3" cols="80" rows="3"></textarea>
+</div>
+
+<h3>Feedback</h3>
+<div>
+<p>Provide feedback on these tasks, if you have any.</p>
+<textarea name="comment" cols="80" rows="3"></textarea>
+</div>
+
+</div>
+

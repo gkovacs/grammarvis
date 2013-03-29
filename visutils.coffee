@@ -36,11 +36,11 @@ do ($) ->
       #padding = (maxdepth-depth+1)*15 + (maxdepth-depth) # this last term to account for the border of 1
     if not color?
       color = depthToColor(depth)
-    posTag = deserializeArray(this.attr('contenthierarchy')).pos
-    if posTag? and posTag in ['N', 'NN']
-      color = 'lightgreen'
-    if posTag? and posTag in ['V', 'VC']
-      color = 'pink'
+    #posTag = deserializeArray(this.attr('contenthierarchy')).pos
+    #if posTag? and posTag in ['N', 'NN']
+    #  color = 'lightgreen'
+    #if posTag? and posTag in ['V', 'VC']
+    #  color = 'pink'
     #if posTag? and posTag == 'P'
     #  color = '#FFAA55'
     this.addClass('bordered').css('position', 'relative').css('padding', padding + 'px').css('font-size', fontSize).attr('color', color).css('background-color', color).css('border-width', 1).css('border-style', 'solid').css('float', 'left').attr('depth', depth).css('border-color', 'black').css('border-radius', '10px').css('margin-top', margin).css('margin-bottom', margin)
