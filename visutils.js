@@ -278,10 +278,9 @@
     }
   };
 
-  makeDivs = function(subHierarchy, lang, translations, maxdepth, depth, terminalsOnly) {
+  makeDivs = function(subHierarchy, lang, translations, maxdepth, depth) {
     var basediv, child, contentHierarchy, foreignText, id, translation, _i, _len;
     if (depth == null) depth = 1;
-    if (terminalsOnly == null) terminalsOnly = false;
     basediv = $('<div>');
     id = subHierarchy.id;
     contentHierarchy = subHierarchy;
@@ -317,11 +316,9 @@
     initializeHover(basediv);
     if (contentHierarchy.length > 1) {
       basediv.borderStuff(depth, maxdepth);
-      if (!terminalsOnly) {
-        for (_i = 0, _len = contentHierarchy.length; _i < _len; _i++) {
-          child = contentHierarchy[_i];
-          basediv.append(makeDivs(child, lang, translations, maxdepth, depth + 1, terminalsOnly));
-        }
+      for (_i = 0, _len = contentHierarchy.length; _i < _len; _i++) {
+        child = contentHierarchy[_i];
+        basediv.append(makeDivs(child, lang, translations, maxdepth, depth + 1));
       }
     } else if (contentHierarchy.length === 1) {
       if (typeof contentHierarchy[0] === typeof '') {
@@ -389,9 +386,8 @@
     }
   };
 
-  renderSentence = function(sentence, ref_hierarchy, translations, lang, renderTarget, terminalsOnly) {
+  renderSentence = function(sentence, ref_hierarchy, translations, lang, renderTarget) {
     var idnum, ref_hierarchy_with_ids, rootBaseDiv;
-    if (terminalsOnly == null) terminalsOnly = false;
     console.log(ref_hierarchy);
     console.log(translations);
     idnum = 0;
@@ -401,7 +397,7 @@
     if (lang === 'ja') ref_hierarchy = addFakePOSTags(ref_hierarchy);
     ref_hierarchy_with_ids = addIdsToHierarchy(ref_hierarchy, 'R' + idnum);
     console.log(ref_hierarchy_with_ids);
-    rootBaseDiv = makeDivs(ref_hierarchy_with_ids, lang, translations, getMaxDepth(ref_hierarchy_with_ids) - 1, terminalsOnly);
+    rootBaseDiv = makeDivs(ref_hierarchy_with_ids, lang, translations, getMaxDepth(ref_hierarchy_with_ids) - 1);
     renderTarget.append(rootBaseDiv).append('<br>');
     rootBaseDiv.showAsSibling();
     return callOnceElementAvailable('#HR' + idnum, function() {

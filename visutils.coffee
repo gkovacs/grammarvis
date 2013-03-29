@@ -256,7 +256,7 @@ initializeHover = (basediv) ->
 #  while agenda.length > 0
 #    currentElem = a.shift()
 
-makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1, terminalsOnly=false) ->
+makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
   basediv = $('<div>')
   id = subHierarchy.id
   contentHierarchy = subHierarchy #[..]
@@ -292,9 +292,8 @@ makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1, terminalsOnly=f
   initializeHover(basediv)
   if contentHierarchy.length > 1
     basediv.borderStuff(depth, maxdepth)
-    if not terminalsOnly
-      for child in contentHierarchy
-        basediv.append makeDivs(child, lang, translations, maxdepth, depth+1, terminalsOnly)
+    for child in contentHierarchy
+      basediv.append makeDivs(child, lang, translations, maxdepth, depth+1)
     #else
     #  for child in terminalElements(contentHierarchy)
     #    basediv.append makeDivs(child, lang, translations, maxdepth, depth+1, terminalsOnly)
@@ -355,7 +354,7 @@ callOnceElementAvailable = (element, callback) ->
       callOnceElementAvailable(element, callback)
     , 10)
 
-renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget, terminalsOnly=false) ->
+renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget) ->
   console.log ref_hierarchy
   console.log translations
   idnum = 0
@@ -365,7 +364,7 @@ renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget, ter
     ref_hierarchy = addFakePOSTags(ref_hierarchy)
   ref_hierarchy_with_ids = addIdsToHierarchy(ref_hierarchy, 'R' + idnum)
   console.log ref_hierarchy_with_ids
-  rootBaseDiv = makeDivs(ref_hierarchy_with_ids, lang, translations, getMaxDepth(ref_hierarchy_with_ids) - 1, terminalsOnly)
+  rootBaseDiv = makeDivs(ref_hierarchy_with_ids, lang, translations, getMaxDepth(ref_hierarchy_with_ids) - 1)
   renderTarget.append(rootBaseDiv).append('<br>')
   rootBaseDiv.showAsSibling()
   #currentTopMargin = parseInt(rootBaseDiv.css('margin-top').split('px').join(''))
