@@ -234,6 +234,7 @@ hierarchyWithIdToTerminals = (hierarchy, lang) ->
 
 initializeHover = (basediv) ->
   contentHierarchy = deserializeArray(basediv.attr('contentHierarchy'))
+  console.log contentHierarchy
   depth = basediv.attr('depth')
   maxdepth = basediv.attr('maxdepth')
   basediv.hoverId()
@@ -248,9 +249,14 @@ initializeHover = (basediv) ->
       basediv.borderStuff(depth, maxdepth, 'white')
         #.css('font-size', 20+depth*10)
         .text(contentHierarchy[0]).hoverId()
-    
 
-makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
+#terminalElements = (contentHierarchy) ->
+#  output = []
+#  agenda = [contentHierarchy]
+#  while agenda.length > 0
+#    currentElem = a.shift()
+
+makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1, terminalsOnly=false) ->
   basediv = $('<div>')
   id = subHierarchy.id
   contentHierarchy = subHierarchy #[..]
@@ -286,8 +292,12 @@ makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1) ->
   initializeHover(basediv)
   if contentHierarchy.length > 1
     basediv.borderStuff(depth, maxdepth)
-    for child in contentHierarchy
-      basediv.append makeDivs(child, lang, translations, maxdepth, depth+1)
+    if not terminalsOnly
+      for child in contentHierarchy
+        basediv.append makeDivs(child, lang, translations, maxdepth, depth+1, terminalsOnly)
+    #else
+    #  for child in terminalElements(contentHierarchy)
+    #    basediv.append makeDivs(child, lang, translations, maxdepth, depth+1, terminalsOnly)
   else if contentHierarchy.length == 1
     if typeof contentHierarchy[0] == typeof ''
       basediv.borderStuff(depth, maxdepth, 'white')
@@ -345,7 +355,7 @@ callOnceElementAvailable = (element, callback) ->
       callOnceElementAvailable(element, callback)
     , 10)
 
-renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget) ->
+renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget, terminalsOnly=false) ->
   console.log ref_hierarchy
   console.log translations
   idnum = 0
@@ -355,7 +365,7 @@ renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget) ->
     ref_hierarchy = addFakePOSTags(ref_hierarchy)
   ref_hierarchy_with_ids = addIdsToHierarchy(ref_hierarchy, 'R' + idnum)
   console.log ref_hierarchy_with_ids
-  rootBaseDiv = makeDivs(ref_hierarchy_with_ids, lang, translations, getMaxDepth(ref_hierarchy_with_ids) - 1)
+  rootBaseDiv = makeDivs(ref_hierarchy_with_ids, lang, translations, getMaxDepth(ref_hierarchy_with_ids) - 1, terminalsOnly)
   renderTarget.append(rootBaseDiv).append('<br>')
   rootBaseDiv.showAsSibling()
   #currentTopMargin = parseInt(rootBaseDiv.css('margin-top').split('px').join(''))
@@ -485,36 +495,39 @@ insertScript = root.insertScript = (url) ->
   scriptTag.src = url
   document.documentElement.appendChild(scriptTag)
 
+getParseHierarchyAndTranslationsForLang = (sentence, lang, callback) ->
+  #now.getParseHierarchyAndTranslations(sentence, lang, (ref_hierarchy,translations) -> callback(null, [ref_hierarchy,translations]))
+  if not root.isMTurk?
+    basePath = '/getParseHierarchyAndTranslations'
+    if root.serverLocation.indexOf('heroku') != -1
+      basePath = '/getParseHierarchyAndTranslations.php'
+    $.get(root.serverLocation + basePath + '?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang), (resultData, resultStatus) ->
+      resultData = deserializeArray(resultData)
+      currentPair = [resultData.hierarchy, resultData.translations]
+      #console.log currentPair
+      callback(null, currentPair)
+    )
+  else
+    callNum = callbackParseHierarchy.length
+    callbackParseHierarchy.push (resultData) ->
+      console.log resultData
+      resultData = objToArray(resultData)
+      currentPair = [resultData.hierarchy, resultData.translations]
+      callback(null, currentPair)
+    basePath = '/getParseHierarchyAndTranslations'
+    if root.serverLocation.indexOf('heroku') != -1
+      basePath = '/getParseHierarchyAndTranslations.php'
+    insertScript(root.serverLocation + basePath + '?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang) + '&callback=callbackParseHierarchy[' + callNum + ']')
+
 addSentences = root.addSentences = (sentences, lang, renderTarget, clearExisting=false, doneCallback) ->
   if not lang? and not renderTarget?
     lang = getUrlParameters()['lang'] ? 'en'
     renderTarget = $('#sentenceDisplay')
   if not renderTarget?
     renderTarget = $('#sentenceDisplay')
-  parseHierarchyAndTranslationsForLang = (sentence, callback) ->
-    #now.getParseHierarchyAndTranslations(sentence, lang, (ref_hierarchy,translations) -> callback(null, [ref_hierarchy,translations]))
-    if not root.isMTurk?
-      basePath = '/getParseHierarchyAndTranslations'
-      if root.serverLocation.indexOf('heroku') != -1
-        basePath = '/getParseHierarchyAndTranslations.php'
-      $.get(root.serverLocation + basePath + '?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang), (resultData, resultStatus) ->
-        resultData = deserializeArray(resultData)
-        currentPair = [resultData.hierarchy, resultData.translations]
-        #console.log currentPair
-        callback(null, currentPair)
-      )
-    else
-      callNum = callbackParseHierarchy.length
-      callbackParseHierarchy.push (resultData) ->
-        console.log resultData
-        resultData = objToArray(resultData)
-        currentPair = [resultData.hierarchy, resultData.translations]
-        callback(null, currentPair)
-      basePath = '/getParseHierarchyAndTranslations'
-      if root.serverLocation.indexOf('heroku') != -1
-        basePath = '/getParseHierarchyAndTranslations.php'
-      insertScript(root.serverLocation + basePath + '?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang) + '&callback=callbackParseHierarchy[' + callNum + ']')
-  async.mapSeries(sentences, parseHierarchyAndTranslationsForLang, (err, results) ->
+  getParseHierarchyAndTranslationsForLangCurried = (sentence, callback) ->
+    getParseHierarchyAndTranslationsForLang(sentence, lang, callback)
+  async.mapSeries(sentences, getParseHierarchyAndTranslationsForLangCurried, (err, results) ->
     if clearExisting
       renderTarget.html('')
     for i in [0...results.length]

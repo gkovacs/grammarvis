@@ -562,7 +562,7 @@ app.get('/getFullTranslation', (req, res) ->
   lang = req.query.lang.toString()
   getTranslation(sentence, lang, (translation) ->
     res.end(translation)
-  )
+  , false)
 )
 
 doesWordExist = (word, lang) ->
@@ -606,7 +606,8 @@ everyone.now.getTranslation = getTranslation = (sentence, lang, callback, isTerm
         romaji = jdict.getRomaji(sentence)
     if lang == 'zh'
       englishDef = cdict.getEnglishListForWord(sentence).join('; ')
-      romaji = cdict.getPinyin(sentence)
+      if isTerminal
+        romaji = cdict.getPinyin(sentence)
     if dictionaryList[lang]?
       ldict = dictionaryList[lang]
       englishDef = ldict.getEnglishListForWord(sentence).join('; ')
