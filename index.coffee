@@ -1,7 +1,11 @@
 $(document).ready(() ->
   #$(document).tooltip({track: true, show:false, hide:false})
-  phraseText = getUrlParameters()['sentence'].split('(').join(' [ ').split(')').join(' ] ').split('  ').join(' ') ? 'the cat jumped over the dog'
+  urlParams = getUrlParameters()
+  phraseText = urlParams['sentence'].split('(').join(' [ ').split(')').join(' ] ').split('  ').join(' ') ? 'the cat jumped over the dog'
   console.log phraseText
+  hideStructure = false
+  if urlParams['hideStructure']?
+    hideStructure = (urlParams['hideStructure'] != 'false')
   lang = getUrlParameters()['lang'] ? 'en'
   if false #lang == 'de'
     console.log '/segmentSentences?lang=' + lang + '&text=' + phraseText
@@ -9,10 +13,10 @@ $(document).ready(() ->
       console.log sentences
       sentences = JSON.parse(sentences)
       console.log sentences
-      addSentences(sentences, lang)
+      addSentences(sentences, lang, $('#sentenceDisplay'), {'hideStructure': hideStructure})
     )
   else
     sentences = [phraseText]
-    addSentences(sentences, lang)
+    addSentences(sentences, lang, $('#sentenceDisplay'), {'hideStructure': hideStructure})
 )
 
