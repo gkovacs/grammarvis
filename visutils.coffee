@@ -494,6 +494,11 @@ insertScript = root.insertScript = (url) ->
   scriptTag.src = url
   document.documentElement.appendChild(scriptTag)
 
+getTranslationForLang = root.getTranslationForLang = (sentence, lang, callback) ->
+  getParseHierarchyAndTranslationsForLang(sentence, lang, (errors, currentPair) ->
+    callback(currentPair[1][sentence])
+  )
+
 getParseHierarchyAndTranslationsForLang = (sentence, lang, callback) ->
   #now.getParseHierarchyAndTranslations(sentence, lang, (ref_hierarchy,translations) -> callback(null, [ref_hierarchy,translations]))
   if not root.isMTurk?
