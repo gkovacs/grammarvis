@@ -13,20 +13,92 @@ function addSentenceTranslateOnly(sentence, lang, target) {
   })
 }
 
+function addSentenceVisType(sentence, lang, target, vistype) {
+  if (vistype == 0) {
+    addSentenceTranslateOnly(sentence, lang, target)
+  }
+  if (vistype == 1) {
+    addSentence(sentence, lang, target, {'clearExisting': true, 'hideStructure': true})
+  }
+  if (vistype == 2) {
+    addSentence(sentence, lang, target, {'clearExisting': true})
+  }
+}
+
+function getRandomOrdering() {
+  var randNum = Math.floor(Math.random()*6)
+  return [[0,1,2], [1,2,0], [2,0,1], [0,2,1], [2,1,0], [1,0,2]][randNum]
+}
+
+function runBrowserCheck() {
+  jQuery.browser = {};
+  jQuery.browser.mozilla = /mozilla/.test(navigator.userAgent.toLowerCase()) && !/webkit/.test(navigator.userAgent.toLowerCase());
+  jQuery.browser.webkit = /webkit/.test(navigator.userAgent.toLowerCase());
+  jQuery.browser.opera = /opera/.test(navigator.userAgent.toLowerCase());
+  jQuery.browser.msie = /msie/.test(navigator.userAgent.toLowerCase());
+  if (!$.browser.webkit && !$.browser.mozilla) {
+    alert('This task requires you to use Chrome, Safari, or Firefox. You do not appear to be using one of these browsers.')
+    $('#warningMessage').text('This task requires you to use Chrome, Safari, or Firefox. You do not appear to be using one of these browsers.')
+  }
+}
+
 $(document).ready(function () {
+  runBrowserCheck()
   $('#accordion').accordion({'heightStyle': 'content', 'collapsible': true, 'active': false})
   $('#submitButton').attr('onclick', 'return validateForm()')
   root.serverLocation = '//grammarvis.herokuapp.com';
   root.isMTurk = true;
   addSentence('我哥哥是美国人。', 'zh', $('#exwordlevel'), {'clearExisting': true, 'hideStructure': true});
   addSentence('我哥哥是美国人。', 'zh', $('#exstructural'), {'clearExisting': true, 'hideStructure': false});
-  addSentence('${sentence1}', 'zh', $('#sentence1'), {'clearExisting': true, 'hideStructure': true});
-  //addSentence('${sentence2}', 'zh', $('#sentence2'), {'clearExisting': true});
-  addSentenceTranslateOnly('${sentence2}', 'zh', $('#sentence2'));
-  addSentence('${sentence3}', 'zh', $('#sentence3'), {'clearExisting': true});
+  var sentenceContents = ['${sentence1}', '${sentence2}', '${sentence3}']
+  var renderTargets = [$('#sentence1'), $('#sentence2'), $('#sentence3')]
+  var sentenceOrdering = getRandomOrdering()
+  var visOrdering = getRandomOrdering()
+  for (var i = 0; i < sentenceOrdering.length; ++i) {
+    var sentenceNum = sentenceOrdering[i]
+    var visType = visOrdering[i]
+    addSentenceVisType(sentenceContents[sentenceNum], 'zh', renderTargets[sentenceNum], visType)
+  }
+  
+  setInterval(function() {
+    var activeSent = $('.ui-state-active').text()
+    if (activeSent == 'Sentence 1') {
+      incrementVal($('#sent1Time'))
+    }
+    if (activeSent == 'Sentence 2') {
+      incrementVal($('#sent2Time'))
+    }
+    if (activeSent == 'Sentence 3') {
+      incrementVal($('#sent3Time'))
+    }
+    if (activeSent == 'Feedback') {
+      incrementVal($('#feedbackTime'))
+    }
+  }, 1000)
+  
+  $('#sentenceOrder').val(JSON.stringify(sentenceOrdering))
+  $('#visOrder').val(JSON.stringify(visOrdering))
 })
 
+function incrementVal(inputBox) {
+  var currentVal = parseInt(inputBox.val())
+  if (isNaN(currentVal)) currentVal = 0
+  inputBox.val(currentVal + 1)
+}
+
 function validateForm() {
+  if ($('#translation1').val() == '') {
+    alert('You must enter a translation for Sentence 1');
+    return false;
+  }
+  if ($('#translation2').val() == '') {
+    alert('You must enter a translation for Sentence 2');
+    return false;
+  }
+  if ($('#translation3').val() == '') {
+    alert('You must enter a translation for Sentence 3');
+    return false;
+  }
   return true;
 }
 </script>
@@ -38,8 +110,11 @@ function validateForm() {
   clear: both;
 }
 </style>
+
+<h1 id="warningMessage"></h1>
+
 <h3>Fix Machine-translation Errors</h3>
-<p>You will be shown 3 sentences in a foreign language. Each sentence be shown along with a (possibly incorrect) machine-generated translation to English. Correct the English translation, and enter it into the textbox. Note that you do NOT need to know the foreign language to do this task (we are just trying to see how well you understand the machine-generated translation).</p>
+<p>You will be shown 3 sentences in a foreign language. Each sentence will be shown along with a (possibly incorrect) machine-generated translation to English. Correct the English translation, and enter it into the textbox. Note that you do NOT need to know the foreign language to do this task (we are just trying to see how well you understand the machine-generated translation).</p>
 
 <p>The 3 different sentences will each be shown in a different way. One sentence will be shown with the original (foreign-language) sentence, followed by the machine translation, as shown below:</p>
 
@@ -48,7 +123,7 @@ function validateForm() {
 
 <br/>
 
-<p>Another sentence will show the machine translation for the sentence, and translations for the individual words if you hover over them, as shown below:</p>
+<p>Another sentence will show the machine translation for the sentence if you hover the outside, and translations for the individual words if you hover over them, as shown below:</p>
 
 <div id="exwordlevel"></div>
 <div class="clearFloatBreak"></div>
@@ -59,6 +134,8 @@ function validateForm() {
 
 <div id="exstructural"></div>
 <div class="clearFloatBreak"></div>
+
+<br/><br/>
 
 <div id="accordion">
 
@@ -96,4 +173,11 @@ function validateForm() {
 </div>
 
 </div>
+
+<input id="sentenceOrder" name="sentenceOrder" style="display: none"></input>
+<input id="visOrder" name="visOrder" style="display: none"></input>
+<input id="sent1Time" name="sent1Time" style="display: none"></input>
+<input id="sent2Time" name="sent2Time" style="display: none"></input>
+<input id="sent3Time" name="sent3Time" style="display: none"></input>
+<input id="feedbackTime" name="feedbackTime" style="display: none"></input>
 
