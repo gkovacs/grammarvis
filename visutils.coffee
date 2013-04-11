@@ -494,6 +494,7 @@ deserializeArray = root.deserializeArray = (s) ->
   return objToArray(obj)
 
 callbackParseHierarchy = root.callbackParseHierarchy = []
+callbackPartList = root.callbackPartList = []
 
 insertScript = root.insertScript = (url) ->
   scriptTag = document.createElement('script')
@@ -505,6 +506,10 @@ getTranslationForLang = root.getTranslationForLang = (sentence, lang, callback) 
   getParseHierarchyAndTranslationsForLang(sentence, lang, (errors, currentPair) ->
     callback(currentPair[1][sentence])
   )
+
+#getSentencePartList = (sentence, lang, callback) ->
+#  callNum = callbackPartList.length
+#  callbackPartList
 
 getParseHierarchyAndTranslationsForLang = (sentence, lang, callback) ->
   #now.getParseHierarchyAndTranslations(sentence, lang, (ref_hierarchy,translations) -> callback(null, [ref_hierarchy,translations]))

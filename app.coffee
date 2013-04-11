@@ -160,6 +160,37 @@ getChildren = (s) ->
         curchild = []
   return children
 
+app.get '/getPartList', (req, res) ->
+  console.log 'getPartList called'
+  console.log req.query.sentence
+  console.log req.query.lang
+  sentence = req.query.sentence
+  callbackName = req.query.callback
+  lang = req.query.lang
+  getParse(sentence, lang, (parsed) ->
+    constituents = getPartList(parsed, lang)
+    jsonOutput = JSON.stringify(constituents)
+    if not callbackName?
+      res.end(jsonOutput)
+    else
+      res.writeHead(200, { 'Content-Type': 'application/javascript' })
+      res.end(callbackName + '(' + jsonOutput + ')')
+  )
+
+getPartList = (parse, lang) ->
+  output = []
+  seen_parts = {}
+  agenda = [parse]
+  while agenda.length > 0
+    current = agenda.shift()
+    terms = terminals(current, lang)
+    if not seen_parts[terms]?
+      output.push terms
+      seen_parts[terms] = true
+    for child in getChildren(current)
+      agenda.unshift child
+  return output.reverse()
+
 getParseConstituents = root.getParseConstituents = (parse, lang) ->
   output = {}
   agenda = [parse]
