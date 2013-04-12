@@ -48,6 +48,9 @@ $(document).ready(function () {
   $('#submitButton').attr('onclick', 'return validateForm()')
   root.serverLocation = '//grammarvis.herokuapp.com';
   root.isMTurk = true;
+  root.getSentencePartList('我哥哥是美国人', 'zh', function(results) {
+    console.log(results)
+  })
   addSentence('我哥哥是美国人。', 'zh', $('#exwordlevel'), {'clearExisting': true, 'hideStructure': true});
   addSentence('我哥哥是美国人。', 'zh', $('#exstructural'), {'clearExisting': true, 'hideStructure': false});
   var sentenceContents = ['${sentence1}', '${sentence2}', '${sentence3}']
@@ -113,22 +116,14 @@ function validateForm() {
 
 <h1 id="warningMessage"></h1>
 
-<h3>Translate a sentence in a language you don't know by fixings machine-translation errors</h3>
+<h3>Translate a sentence in a language you don't know by fixing machine-translation errors</h3>
 <p>You are attempting to translate a sentence from Chinese to English (we do NOT expect you to actually know Chinese, we're just trying to see how accurate translations you can make). We will ask you to translate each of the phrases that the sentence consists of, and finally translate the full sentence itself.</p>
 
 <p>Each phrase you are asked to translate will be shown along with a visualization that shows a (possibly incorrect) machine-generated translation to English, as well as definitions of its subphrases and words if you hover over them. Correct the English translation, and enter it into the textbox.</p>
 
 <p>Here is an example of how you would translate the sentence "他的哥哥是美国人", with the correct translations filled in:</p>
 
-<div id="他"></div>
-<div id="的"></div>
-<div id="他的"></div>
-<div id="哥哥"></div>
-<div id="他的哥哥"></div>
-<div id="是"></div>
-<div id="美国人"></div>
-<div id="是美国人"></div>
-<div id="他的哥哥是美国人"></div>
+<div id="exampleSent"></div>
 
 
 <br/><br/>

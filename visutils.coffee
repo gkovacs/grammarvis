@@ -507,9 +507,23 @@ getTranslationForLang = root.getTranslationForLang = (sentence, lang, callback) 
     callback(currentPair[1][sentence])
   )
 
-#getSentencePartList = (sentence, lang, callback) ->
-#  callNum = callbackPartList.length
-#  callbackPartList
+getSentencePartList = root.getSentencePartList = (sentence, lang, callback) ->
+  if not root.isMTurk?
+    basePath = '/getPartList'
+    if root.serverLocation.indexOf('heroku') != -1
+      basePath = '/getPartList.php'
+    $.get(root.serverLocation + basePath + '?sentence=' + encodURI(sentence) + '&lang=' + encodeURI(lang), (resultData, resultStatus) ->
+      resultData = JSON.parse(resultData)
+      callback(resultData)
+    )
+  else
+    callNum = callbackPartList.length
+    callbackPartList.push (resultData) ->
+      callback(resultData)
+    basePath = '/getPartList'
+    if root.serverLocation.indexOf('heroku') != -1
+      basePath = '/getPartList.php'
+    insertScript(root.serverLocation + basePath + '?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang) + '&callback=callbackPartList[' + callNum + ']')
 
 getParseHierarchyAndTranslationsForLang = (sentence, lang, callback) ->
   #now.getParseHierarchyAndTranslations(sentence, lang, (ref_hierarchy,translations) -> callback(null, [ref_hierarchy,translations]))
