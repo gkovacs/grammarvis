@@ -3,6 +3,7 @@ $(document).ready(() ->
   urlParams = getUrlParameters()
   phraseText = urlParams['sentence'].split('(').join(' [ ').split(')').join(' ] ').split('  ').join(' ') ? 'the cat jumped over the dog'
   console.log phraseText
+  highlightRegion = urlParams['highlight'] ? ''
   hideStructure = false
   if urlParams['hideStructure']?
     hideStructure = (urlParams['hideStructure'] != 'false')
@@ -17,6 +18,6 @@ $(document).ready(() ->
     )
   else
     sentences = [phraseText]
-    addSentences(sentences, lang, $('#sentenceDisplay'), {'hideStructure': hideStructure})
+    addSentences(sentences, lang, $('#sentenceDisplay'), {'hideStructure': hideStructure, 'highlight': highlightRegion})
 )
 

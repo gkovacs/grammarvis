@@ -148,7 +148,11 @@
         rootId = myId;
         if (myId.indexOf('_') !== -1) rootId = myId.slice(0, myId.indexOf('_'));
         _this.css('background-color', _this.attr('color'));
-        return $('#' + rootId).showAsSibling();
+        if (_this.attr('highlightText') === '') {
+          return $('#' + rootId).showAsSibling();
+        } else {
+          return $('.ft' + escape(_this.attr('highlightText')).split('%').join('_')).showAsSibling();
+        }
       });
       return this;
     };
@@ -255,15 +259,19 @@
     }
   };
 
-  initializeHover = function(basediv) {
+  initializeHover = function(basediv, highlight) {
     var contentHierarchy, depth, maxdepth;
     contentHierarchy = deserializeArray(basediv.attr('contentHierarchy'));
     console.log(contentHierarchy);
     depth = basediv.attr('depth');
     maxdepth = basediv.attr('maxdepth');
     basediv.hoverId();
-    if (contentHierarchy.length > 1) {
-      return basediv.borderStuff(depth, maxdepth);
+    console.log('highlight is:' + highlight);
+    console.log('foreignText is:' + basediv.attr('foreignText'));
+    if (basediv.attr('foreignText') === highlight) {
+      return basediv.borderStuff(depth, maxdepth, 'yellow');
+    } else if (contentHierarchy.length > 1) {
+      return basediv.borderStuff(depth, maxdepth, null);
     } else if (contentHierarchy.length === 1) {
       if (typeof contentHierarchy[0] === typeof '') {
         return basediv.borderStuff(depth, maxdepth, 'white').text(contentHierarchy[0]).hoverId();
@@ -288,18 +296,21 @@
     return output;
   };
 
-  makeDivs = function(subHierarchy, lang, translations, maxdepth, depth, hideStructure) {
+  makeDivs = function(subHierarchy, lang, translations, maxdepth, depth, hideStructure, highlight) {
     var basediv, child, contentHierarchy, foreignText, id, translation, _i, _j, _len, _len1, _ref;
     if (depth == null) depth = 1;
     if (hideStructure == null) hideStructure = false;
+    if (highlight == null) highlight = '';
     basediv = $('<div>');
     id = subHierarchy.id;
     contentHierarchy = subHierarchy;
     basediv.addClass('hovertext').attr('id', id);
-    basediv.addClass('hovertext').addClass('textRegion');
+    basediv.addClass('textRegion');
     foreignText = hierarchyWithIdToTerminals(subHierarchy, lang);
+    basediv.addClass('ft' + escape(foreignText).split('%').join('_'));
     basediv.attr('foreignText', foreignText);
     basediv.attr('foreignLang', lang);
+    basediv.attr('highlightText', highlight);
     translation = translations[foreignText];
     basediv.attr('translation', translation);
     basediv.attr('depth', depth);
@@ -324,19 +335,18 @@
         return false;
       });
     })(id);
-    initializeHover(basediv);
     if (contentHierarchy.length > 1) {
       basediv.borderStuff(depth, maxdepth);
       if (!hideStructure) {
         for (_i = 0, _len = contentHierarchy.length; _i < _len; _i++) {
           child = contentHierarchy[_i];
-          basediv.append(makeDivs(child, lang, translations, maxdepth, depth + 1, hideStructure));
+          basediv.append(makeDivs(child, lang, translations, maxdepth, depth + 1, hideStructure, highlight));
         }
       } else {
         _ref = terminalElements(contentHierarchy);
         for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
           child = _ref[_j];
-          basediv.append(makeDivs(child, lang, translations, maxdepth, depth + 1, hideStructure));
+          basediv.append(makeDivs(child, lang, translations, maxdepth, depth + 1, hideStructure, highlight));
         }
       }
     } else if (contentHierarchy.length === 1) {
@@ -344,6 +354,7 @@
         basediv.borderStuff(depth, maxdepth, 'white').text(contentHierarchy[0]).hoverId();
       }
     }
+    initializeHover(basediv, highlight);
     return basediv;
   };
 
@@ -405,9 +416,10 @@
     }
   };
 
-  renderSentence = function(sentence, ref_hierarchy, translations, lang, renderTarget, hideStructure) {
+  renderSentence = function(sentence, ref_hierarchy, translations, lang, renderTarget, hideStructure, highlight) {
     var idnum, maxdepth, ref_hierarchy_with_ids, rootBaseDiv;
     if (hideStructure == null) hideStructure = false;
+    if (highlight == null) highlight = '';
     console.log(ref_hierarchy);
     console.log(translations);
     idnum = 0;
@@ -419,9 +431,13 @@
     console.log(ref_hierarchy_with_ids);
     maxdepth = getMaxDepth(ref_hierarchy_with_ids) - 1;
     if (hideStructure) maxdepth = 1;
-    rootBaseDiv = makeDivs(ref_hierarchy_with_ids, lang, translations, maxdepth, 1, hideStructure);
+    rootBaseDiv = makeDivs(ref_hierarchy_with_ids, lang, translations, maxdepth, 1, hideStructure, highlight);
     renderTarget.append(rootBaseDiv).append('<br>');
-    rootBaseDiv.showAsSibling();
+    if (highlight === '') {
+      rootBaseDiv.showAsSibling();
+    } else {
+      $('.ft' + escape(highlight).split('%').join('_')).showAsSibling();
+    }
     return callOnceElementAvailable('#HR' + idnum, function() {
       var currentTopMargin;
       currentTopMargin = 0;
@@ -576,7 +592,7 @@
       if (root.serverLocation.indexOf('heroku') !== -1) {
         basePath = '/getPartList.php';
       }
-      return $.get(root.serverLocation + basePath + '?sentence=' + encodURI(sentence) + '&lang=' + encodeURI(lang), function(resultData, resultStatus) {
+      return $.get(root.serverLocation + basePath + '?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang), function(resultData, resultStatus) {
         resultData = JSON.parse(resultData);
         return callback(resultData);
       });
@@ -624,11 +640,15 @@
   };
 
   addSentences = root.addSentences = function(sentences, lang, renderTarget, options, doneCallback) {
-    var clearExisting, getParseHierarchyAndTranslationsForLangCurried, hideStructure, _ref;
+    var clearExisting, getParseHierarchyAndTranslationsForLangCurried, hideStructure, highlight, _ref;
     if (doneCallback == null) doneCallback = null;
     hideStructure = false;
     if ((options != null) && (options.hideStructure != null) && options.hideStructure) {
       hideStructure = true;
+    }
+    highlight = '';
+    if ((options != null) && (options.highlight != null) && options.highlight) {
+      highlight = options.highlight;
     }
     clearExisting = false;
     if ((options != null) && (options.clearExisting != null) && options.clearExisting) {
@@ -648,7 +668,7 @@
       for (i = _i = 0, _ref1 = results.length; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
         sentence = sentences[i];
         _ref2 = results[i], ref_hierarchy = _ref2[0], translations = _ref2[1];
-        renderSentence(sentence, ref_hierarchy, translations, lang, renderTarget, hideStructure);
+        renderSentence(sentence, ref_hierarchy, translations, lang, renderTarget, hideStructure, highlight);
       }
       if (doneCallback != null) return doneCallback();
     });

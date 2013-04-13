@@ -134,7 +134,10 @@ do ($) ->
       if myId.indexOf('_') != -1
         rootId = myId[...myId.indexOf('_')]
       this.css('background-color', this.attr('color'))
-      $('#' + rootId).showAsSibling()
+      if this.attr('highlightText') == ''
+        $('#' + rootId).showAsSibling()
+      else
+        $('.ft' + escape(this.attr('highlightText')).split('%').join('_') ).showAsSibling()
     )
     return this
 
@@ -232,14 +235,18 @@ hierarchyWithIdToTerminals = (hierarchy, lang) ->
     else
       return children.join(' ')
 
-initializeHover = (basediv) ->
+initializeHover = (basediv, highlight) ->
   contentHierarchy = deserializeArray(basediv.attr('contentHierarchy'))
   console.log contentHierarchy
   depth = basediv.attr('depth')
   maxdepth = basediv.attr('maxdepth')
   basediv.hoverId()
-  if contentHierarchy.length > 1
-    basediv.borderStuff(depth, maxdepth)
+  console.log 'highlight is:' + highlight
+  console.log 'foreignText is:' + basediv.attr('foreignText')
+  if basediv.attr('foreignText') == highlight
+    basediv.borderStuff(depth, maxdepth, 'yellow')
+  else if contentHierarchy.length > 1
+    basediv.borderStuff(depth, maxdepth, null)
   else if contentHierarchy.length == 1
     if typeof contentHierarchy[0] == typeof ''
       basediv.borderStuff(depth, maxdepth, 'white')
@@ -259,16 +266,18 @@ terminalElements = (contentHierarchy) ->
       output.push terminalElement
   return output
 
-makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1, hideStructure=false) ->
+makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1, hideStructure=false, highlight='') ->
   basediv = $('<div>')
   id = subHierarchy.id
   contentHierarchy = subHierarchy #[..]
   basediv.addClass('hovertext').attr('id', id)
-  basediv.addClass('hovertext').addClass('textRegion')
+  basediv.addClass('textRegion')
   foreignText = hierarchyWithIdToTerminals(subHierarchy, lang)
+  basediv.addClass('ft' + escape(foreignText).split('%').join('_'))
   #console.log 'foreign text: ' + foreignText
   basediv.attr('foreignText', foreignText)
   basediv.attr('foreignLang', lang)
+  basediv.attr('highlightText', highlight)
   translation = translations[foreignText]
   basediv.attr('translation', translation)
   basediv.attr('depth', depth)
@@ -292,15 +301,14 @@ makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1, hideStructure=f
       return false
     )
   #basediv.hoverText(translations[currentText])
-  initializeHover(basediv)
   if contentHierarchy.length > 1
     basediv.borderStuff(depth, maxdepth)
     if not hideStructure
       for child in contentHierarchy
-        basediv.append makeDivs(child, lang, translations, maxdepth, depth+1, hideStructure)
+        basediv.append makeDivs(child, lang, translations, maxdepth, depth+1, hideStructure, highlight)
     else
       for child in terminalElements(contentHierarchy)
-        basediv.append makeDivs(child, lang, translations, maxdepth, depth+1, hideStructure)
+        basediv.append makeDivs(child, lang, translations, maxdepth, depth+1, hideStructure, highlight)
   else if contentHierarchy.length == 1
     if typeof contentHierarchy[0] == typeof ''
       basediv.borderStuff(depth, maxdepth, 'white')
@@ -310,6 +318,7 @@ makeDivs = (subHierarchy, lang, translations, maxdepth, depth=1, hideStructure=f
     #  basediv.borderStuff(depth, maxdepth, 'white')
     #    #.css('font-size', 20+depth*10)
     #    .text(contentHierarchy[0]).hoverId()
+  initializeHover(basediv, highlight)
   return basediv
 
 addIdsToHierarchy = (hierarchy, myId='R0') ->
@@ -358,7 +367,7 @@ callOnceElementAvailable = (element, callback) ->
       callOnceElementAvailable(element, callback)
     , 10)
 
-renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget, hideStructure=false) ->
+renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget, hideStructure=false, highlight='') ->
   console.log ref_hierarchy
   console.log translations
   idnum = 0
@@ -371,9 +380,12 @@ renderSentence = (sentence, ref_hierarchy, translations, lang, renderTarget, hid
   maxdepth = getMaxDepth(ref_hierarchy_with_ids) - 1
   if hideStructure
     maxdepth = 1
-  rootBaseDiv = makeDivs(ref_hierarchy_with_ids, lang, translations, maxdepth, 1, hideStructure)
+  rootBaseDiv = makeDivs(ref_hierarchy_with_ids, lang, translations, maxdepth, 1, hideStructure, highlight)
   renderTarget.append(rootBaseDiv).append('<br>')
-  rootBaseDiv.showAsSibling()
+  if highlight == ''
+    rootBaseDiv.showAsSibling()
+  else
+    $('.ft' + escape(highlight).split('%').join('_')).showAsSibling()
   #currentTopMargin = parseInt(rootBaseDiv.css('margin-top').split('px').join(''))
   callOnceElementAvailable('#HR' + idnum, () ->
     currentTopMargin = 0
@@ -512,7 +524,7 @@ getSentencePartList = root.getSentencePartList = (sentence, lang, callback) ->
     basePath = '/getPartList'
     if root.serverLocation.indexOf('heroku') != -1
       basePath = '/getPartList.php'
-    $.get(root.serverLocation + basePath + '?sentence=' + encodURI(sentence) + '&lang=' + encodeURI(lang), (resultData, resultStatus) ->
+    $.get(root.serverLocation + basePath + '?sentence=' + encodeURI(sentence) + '&lang=' + encodeURI(lang), (resultData, resultStatus) ->
       resultData = JSON.parse(resultData)
       callback(resultData)
     )
@@ -553,6 +565,9 @@ addSentences = root.addSentences = (sentences, lang, renderTarget, options, done
   hideStructure = false
   if options? and options.hideStructure? and options.hideStructure
     hideStructure = true
+  highlight = ''
+  if options? and options.highlight? and options.highlight
+    highlight = options.highlight
   clearExisting = false
   if options? and options.clearExisting? and options.clearExisting
     clearExisting = true
@@ -569,7 +584,7 @@ addSentences = root.addSentences = (sentences, lang, renderTarget, options, done
     for i in [0...results.length]
       sentence = sentences[i]
       [ref_hierarchy,translations] = results[i]
-      renderSentence(sentence, ref_hierarchy, translations, lang, renderTarget, hideStructure)
+      renderSentence(sentence, ref_hierarchy, translations, lang, renderTarget, hideStructure, highlight)
     if doneCallback?
       doneCallback()
   )
