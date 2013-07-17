@@ -1,0 +1,183 @@
+<link rel="stylesheet" type="text/css" href="//grammarvis.herokuapp.com/jquery-ui-1.10.0.custom.min.css">
+<script src="//grammarvis.herokuapp.com/jquery-1.9.0.js"></script>
+<script src="//grammarvis.herokuapp.com/jquery-ui-1.10.0.custom.min.js"></script>
+<script src="//grammarvis.herokuapp.com/async.js"></script>
+<script src="//grammarvis.herokuapp.com/visutils.js"></script>
+<script>
+root = window
+
+function addSentenceTranslateOnly(sentence, lang, target) {
+  getTranslationForLang(sentence, lang, function(results) {
+    target.append($('<div>').text(sentence))
+    target.append($('<div>').text(results))
+  })
+}
+
+function addSentenceVisType(sentence, lang, target, vistype) {
+  if (vistype == 0) {
+    addSentenceTranslateOnly(sentence, lang, target)
+  }
+  if (vistype == 1) {
+    addSentence(sentence, lang, target, {'clearExisting': true, 'hideStructure': true})
+  }
+  if (vistype == 2) {
+    addSentence(sentence, lang, target, {'clearExisting': true})
+  }
+}
+
+function getRandomOrdering() {
+  var randNum = Math.floor(Math.random()*6)
+  return [[0,1,2], [1,2,0], [2,0,1], [0,2,1], [2,1,0], [1,0,2]][randNum]
+}
+
+function runBrowserCheck() {
+  jQuery.browser = {};
+  jQuery.browser.mozilla = /mozilla/.test(navigator.userAgent.toLowerCase()) && !/webkit/.test(navigator.userAgent.toLowerCase());
+  jQuery.browser.webkit = /webkit/.test(navigator.userAgent.toLowerCase());
+  jQuery.browser.opera = /opera/.test(navigator.userAgent.toLowerCase());
+  jQuery.browser.msie = /msie/.test(navigator.userAgent.toLowerCase());
+  if (!$.browser.webkit && !$.browser.mozilla) {
+    alert('This task requires you to use Chrome, Safari, or Firefox. You do not appear to be using one of these browsers.')
+    $('#warningMessage').text('This task requires you to use Chrome, Safari, or Firefox. You do not appear to be using one of these browsers.')
+  }
+}
+
+$(document).ready(function () {
+  runBrowserCheck()
+  $('#accordion').accordion({'heightStyle': 'content', 'collapsible': true, 'active': false})
+  $('#submitButton').attr('onclick', 'return validateForm()')
+  root.serverLocation = '//grammarvis.herokuapp.com';
+  root.isMTurk = true;
+  addSentence('我哥哥是美国人。', 'zh', $('#exwordlevel'), {'clearExisting': true, 'hideStructure': true});
+  addSentence('我哥哥是美国人。', 'zh', $('#exstructural'), {'clearExisting': true, 'hideStructure': false});
+  var sentenceContents = ['我上機之前打了電話給兒子，叫他去機場接我。', '他整天都在埋頭埋腦地看小說，連飯也沒有吃。', '你去那個超級市場，幾乎甚麼日用品都買得到。']
+  var renderTargets = [$('#sentence1'), $('#sentence2'), $('#sentence3')]
+  var sentenceOrdering = getRandomOrdering()
+  var visOrdering = getRandomOrdering()
+  for (var i = 0; i < sentenceOrdering.length; ++i) {
+    var sentenceNum = sentenceOrdering[i]
+    var visType = visOrdering[i]
+    addSentenceVisType(sentenceContents[sentenceNum], 'zh', renderTargets[sentenceNum], visType)
+  }
+  
+  setInterval(function() {
+    var activeSent = $('.ui-state-active').text()
+    if (activeSent == 'Sentence 1') {
+      incrementVal($('#sent1Time'))
+    }
+    if (activeSent == 'Sentence 2') {
+      incrementVal($('#sent2Time'))
+    }
+    if (activeSent == 'Sentence 3') {
+      incrementVal($('#sent3Time'))
+    }
+    if (activeSent == 'Feedback') {
+      incrementVal($('#feedbackTime'))
+    }
+  }, 1000)
+  
+  $('#sentenceOrder').val(JSON.stringify(sentenceOrdering))
+  $('#visOrder').val(JSON.stringify(visOrdering))
+})
+
+function incrementVal(inputBox) {
+  var currentVal = parseInt(inputBox.val())
+  if (isNaN(currentVal)) currentVal = 0
+  inputBox.val(currentVal + 1)
+}
+
+function validateForm() {
+  if ($('#translation1').val() == '') {
+    alert('You must enter a translation for Sentence 1');
+    return false;
+  }
+  if ($('#translation2').val() == '') {
+    alert('You must enter a translation for Sentence 2');
+    return false;
+  }
+  if ($('#translation3').val() == '') {
+    alert('You must enter a translation for Sentence 3');
+    return false;
+  }
+  return true;
+}
+</script>
+<style>
+.clearFloatBreak {
+  width: 100%;
+  height: 1px;
+  margin: 0 0 -1px;
+  clear: both;
+}
+</style>
+
+<h1 id="warningMessage"></h1>
+
+<h3>Fix Machine-translation Errors</h3>
+<p>You will be shown 3 sentences in a foreign language. Each sentence will be shown along with a (possibly incorrect) machine-generated translation to English. Correct the English translation, and enter it into the textbox. Note that you do NOT need to know the foreign language to do this task (we are just trying to see how well you understand the machine-generated translation).</p>
+
+<p>The 3 different sentences will each be shown in a different way. One sentence will be shown with the original (foreign-language) sentence, followed by the machine translation, as shown below:</p>
+
+<p>我哥哥是美国人。</p>
+<p>My brother is American.</p>
+
+<br/>
+
+<p>Another sentence will show the machine translation for the sentence if you hover the outside, and translations for the individual words if you hover over them, as shown below:</p>
+
+<div id="exwordlevel"></div>
+<div class="clearFloatBreak"></div>
+
+<br/>
+
+<p>Another sentence will show the machine translation for the sentence, and translations for any of the constituent phrases if you hover over their outlines, as shown below:</p>
+
+<div id="exstructural"></div>
+<div class="clearFloatBreak"></div>
+
+<br/><br/>
+
+<div id="accordion">
+
+<h3>Sentence 1</h3>
+<div>
+<br/><br/>
+<div id="sentence1"></div>
+<div class="clearFloatBreak"></div>
+<p>Your corrected English translation for Sentence 1:</p>
+<textarea id="translation1" name="translation1" cols="80" rows="3"></textarea>
+</div>
+
+<h3>Sentence 2</h3>
+<div>
+<br/><br/>
+<div id="sentence2"></div>
+<div class="clearFloatBreak"></div>
+<p>Your corrected English translation for Sentence 2:</p>
+<textarea id="translation2" name="translation2" cols="80" rows="3"></textarea>
+</div>
+
+<h3>Sentence 3</h3>
+<div>
+<br/><br/>
+<div id="sentence3"></div>
+<div class="clearFloatBreak"></div>
+<p>Your corrected English translation for Sentence 3:</p>
+<textarea id="translation3" name="translation3" cols="80" rows="3"></textarea>
+</div>
+
+<h3>Feedback</h3>
+<div>
+<p>Provide feedback on these tasks, if you have any.</p>
+<textarea name="comment" cols="80" rows="3"></textarea>
+</div>
+
+</div>
+
+<input id="sentenceOrder" name="sentenceOrder" style="display: none"></input>
+<input id="visOrder" name="visOrder" style="display: none"></input>
+<input id="sent1Time" name="sent1Time" style="display: none"></input>
+<input id="sent2Time" name="sent2Time" style="display: none"></input>
+<input id="sent3Time" name="sent3Time" style="display: none"></input>
+<input id="feedbackTime" name="feedbackTime" style="display: none"></input>
+
