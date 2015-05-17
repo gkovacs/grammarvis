@@ -3,7 +3,7 @@ print = console.log
 
 fs = require 'fs'
 
-$ = require 'jQuery'
+$ = require('jquery')(require("jsdom").jsdom().parentWindow)
 
 und = require 'underscore'
 

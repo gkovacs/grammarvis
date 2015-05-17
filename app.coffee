@@ -1,4 +1,4 @@
-$ = require 'jQuery'
+$ = require('jquery')(require("jsdom").jsdom().parentWindow)
 request = require 'request'
 needle = require 'needle'
 
